@@ -27,7 +27,6 @@ public class TelegramBotFacade extends TelegramLongPollingBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        // TODO: xatoliklarni ErrorNotificationService orqali qayta ishlash
         updateDispatcher.dispatch(update);
     }
 }

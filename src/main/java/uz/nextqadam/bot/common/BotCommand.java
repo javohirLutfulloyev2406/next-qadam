@@ -11,7 +11,9 @@ public enum BotCommand {
     MOTIVATE("/motivate", "Motivatsion xabar olish"),
     SOS("/sos", "Shoshilinch yordam so'rash"),
     FORGET("/forget", "Xotiradagi ma'lumotni o'chirish"),
-    MEMORY("/memory", "Xotiradagi ma'lumotlarni ko'rish");
+    MEMORY("/memory", "Xotiradagi ma'lumotlarni ko'rish"),
+    NEW_GOAL("/newgoal", "Yangi maqsad qo'shish"),
+    NEXT_STEP("/nextstep", "Bugungi keyingi qadamni ko'rsatish");
 
     private final String command;
     private final String description;

@@ -7,11 +7,11 @@ import uz.nextqadam.bot.common.enums.ToneType;
 
 public interface UserService {
 
-    User registerOrGetUser(Long telegramId, String name);
-
     Optional<User> findByTelegramId(Long telegramId);
 
-    User updateTonePreference(UUID userId, ToneType tonePreference);
+    User createUser(Long telegramId, String name);
+
+    User updateTonePreference(UUID userId, ToneType tone);
 
     User updateTimezone(UUID userId, String timezone);
 }

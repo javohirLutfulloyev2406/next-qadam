@@ -1,0 +1,52 @@
+package uz.nextqadam.bot.ai.impl;
+
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import uz.nextqadam.bot.ai.AiResponseParseException;
+import uz.nextqadam.bot.ai.AiResponseParser;
+import uz.nextqadam.bot.ai.dto.GoalDecompositionResult;
+
+@Component
+public class AiResponseParserImpl implements AiResponseParser {
+
+    private static final Logger log = LoggerFactory.getLogger(AiResponseParserImpl.class);
+
+    private final ObjectMapper objectMapper;
+
+    public AiResponseParserImpl(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public GoalDecompositionResult parseGoalDecomposition(String rawJson) {
+        String cleaned = stripMarkdownFence(rawJson);
+        try {
+            return objectMapper.readValue(cleaned, GoalDecompositionResult.class);
+        } catch (JsonProcessingException e) {
+            String logId = UUID.randomUUID().toString();
+            log.error("[{}] AI javobini JSON sifatida parse qilib bo'lmadi. rawJson={}", logId, rawJson, e);
+            throw new AiResponseParseException("AI javobini JSON sifatida o'qib bo'lmadi. logId=" + logId, e);
+        }
+    }
+
+    private String stripMarkdownFence(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String trimmed = raw.trim();
+        if (trimmed.startsWith("```")) {
+            trimmed = trimmed.replaceFirst("^```(?:json)?\\s*", "");
+            if (trimmed.endsWith("```")) {
+                trimmed = trimmed.substring(0, trimmed.length() - 3);
+            }
+        }
+        return trimmed.trim();
+    }
+}

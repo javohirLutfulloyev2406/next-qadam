@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import uz.nextqadam.bot.common.enums.ToneType;
+import uz.nextqadam.bot.common.exception.NextQadamException;
 import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserRepository;
 import uz.nextqadam.bot.user.UserService;
@@ -20,26 +21,33 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User registerOrGetUser(Long telegramId, String name) {
-        // TODO: implementatsiya
-        throw new UnsupportedOperationException("Not implemented yet");
-    }
-
-    @Override
     public Optional<User> findByTelegramId(Long telegramId) {
-        // TODO: implementatsiya
-        throw new UnsupportedOperationException("Not implemented yet");
+        return userRepository.findByTelegramId(telegramId);
     }
 
     @Override
-    public User updateTonePreference(UUID userId, ToneType tonePreference) {
-        // TODO: implementatsiya
-        throw new UnsupportedOperationException("Not implemented yet");
+    public User createUser(Long telegramId, String name) {
+        User user = User.builder()
+                .telegramId(telegramId)
+                .name(name)
+                .tonePreference(ToneType.NORMAL)
+                .build();
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User updateTonePreference(UUID userId, ToneType tone) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+        user.setTonePreference(tone);
+        return userRepository.save(user);
     }
 
     @Override
     public User updateTimezone(UUID userId, String timezone) {
-        // TODO: implementatsiya
-        throw new UnsupportedOperationException("Not implemented yet");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+        user.setTimezone(timezone);
+        return userRepository.save(user);
     }
 }

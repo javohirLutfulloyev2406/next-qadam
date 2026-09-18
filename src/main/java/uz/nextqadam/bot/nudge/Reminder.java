@@ -40,6 +40,11 @@ public class Reminder extends BaseEntity {
     @JoinColumn(name = "task_id", nullable = true)
     private Task task;
 
+    // task=null bo'lgan eslatmalar uchun (masalan Brain Dump'dan kelgan) — eslatma matnini saqlash uchun kerak,
+    // aks holda ReminderScheduler yuborish vaqti kelganda NIMA haqida eslatish kerakligini bilmay qoladi.
+    @Column(name = "content", columnDefinition = "TEXT")
+    private String content;
+
     @Column(name = "scheduled_at")
     private Instant scheduledAt;
 

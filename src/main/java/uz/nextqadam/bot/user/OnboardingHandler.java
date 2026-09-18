@@ -1,6 +1,5 @@
 package uz.nextqadam.bot.user;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -77,21 +76,13 @@ public class OnboardingHandler {
         userService.createUser(chatId, name);
         stageByChatId.put(chatId, OnboardingStage.AWAITING_TONE);
 
-        List<String> labels = List.of("Yumshoq 🌱", "Oddiy 📋", "Qattiq 🔥", "Hardcore ⚡");
-        List<String> callbackData = List.of(
-                TONE_CALLBACK_PREFIX + ToneType.SOFT,
-                TONE_CALLBACK_PREFIX + ToneType.NORMAL,
-                TONE_CALLBACK_PREFIX + ToneType.HARD,
-                TONE_CALLBACK_PREFIX + ToneType.HARDCORE
-        );
-
         telegramExecutor.sendMessageWithKeyboard(chatId,
                 "Tanishganimdan xursandman, " + name + "! Endi menga qaysi uslubda gaplashishimni tanlang:\n\n"
                         + "🌱 Yumshoq — iliq va tushunuvchan ohangda qo'llab-quvvatlayman\n"
                         + "📋 Oddiy — sodda va aniq, ortiqcha so'zlarsiz gaplashaman\n"
                         + "🔥 Qattiq — tik va talabchan, gapni aylantirmayman\n"
                         + "⚡ Hardcore — hech narsani yumshatmayman, to'g'ridan-to'g'ri aytaman",
-                keyboardService.createInlineKeyboard(labels, callbackData, 2));
+                keyboardService.buildToneSelectionKeyboard(TONE_CALLBACK_PREFIX));
     }
 
     public void handleToneSelection(Update update) {

@@ -17,13 +17,20 @@ public class TelegramCommandRegistrar {
     private static final Logger log = LoggerFactory.getLogger(TelegramCommandRegistrar.class);
 
     // Hozircha faqat UpdateDispatcher'da real handler'ga ulangan komandalar ro'yxatga olinadi —
-    // help/profile/forget/memory hali TODO, ular ro'yxatga qo'shilsa foydalanuvchi ularni "/" menyusida
+    // help/motivate/sos hali TODO, ular ro'yxatga qo'shilsa foydalanuvchi ularni "/" menyusida
     // ko'rib bosadi, lekin botdan hozircha hech qanday javob kelmaydi.
     private static final List<uz.nextqadam.bot.common.BotCommand> REGISTERED_COMMANDS = List.of(
             uz.nextqadam.bot.common.BotCommand.START,
             uz.nextqadam.bot.common.BotCommand.NEW_GOAL,
             uz.nextqadam.bot.common.BotCommand.NEXT_STEP,
-            uz.nextqadam.bot.common.BotCommand.DONE
+            uz.nextqadam.bot.common.BotCommand.DONE,
+            uz.nextqadam.bot.common.BotCommand.GOALS,
+            uz.nextqadam.bot.common.BotCommand.PROFILE,
+            uz.nextqadam.bot.common.BotCommand.MEMORY,
+            uz.nextqadam.bot.common.BotCommand.FORGET,
+            uz.nextqadam.bot.common.BotCommand.PLAN_DAY,
+            uz.nextqadam.bot.common.BotCommand.BRAIN_DUMP,
+            uz.nextqadam.bot.common.BotCommand.IDEAS
     );
 
     private final TelegramBotFacade telegramBotFacade;

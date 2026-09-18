@@ -1,6 +1,7 @@
 package uz.nextqadam.bot.goal;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,9 +15,28 @@ public interface GoalService {
      */
     String AI_DECOMPOSITION_FAILURE_MARKER = "[AI_DECOMPOSITION_FAILED]";
 
+    /**
+     * Brain Dump'dan kelgan, aniq Goal'ga bog'lanmagan tasklar uchun "quti" vazifasini bajaruvchi
+     * maxsus Goal'ning nomi (Task.goal har doim majburiy bo'lgani uchun kerak).
+     */
+    String DAILY_CATCH_ALL_GOAL_TITLE = "📥 Kundalik ishlar";
+
     Goal createGoalWithAiDecomposition(UUID userId, String rawDescription);
 
+    /**
+     * Foydalanuvchining DAILY_CATCH_ALL_GOAL_TITLE nomli maxsus Goal'ini qaytaradi — mavjud bo'lmasa
+     * ACTIVE holatda yaratadi.
+     */
+    Goal getOrCreateDailyCatchAllGoal(UUID userId);
+
     Optional<Task> getNextStep(UUID userId);
+
+    /**
+     * getNextStep'ga o'xshaydi, lekin foydalanuvchining BARCHA faol Goal'lari orasidan emas,
+     * aynan bitta Goal doirasidagi eng yaqin PENDING Task'ini qaytaradi (masalan /goals
+     * panelidagi "Keyingi qadamni ko'rish" tugmasi uchun).
+     */
+    Optional<Task> getNextStepForGoal(UUID goalId);
 
     /**
      * getNextStep bilan bir xil logikani ishlatadi — foydalanuvchining eng yaqin
@@ -28,4 +48,13 @@ public interface GoalService {
     Task markTaskDone(UUID taskId);
 
     List<Goal> getActiveGoals(UUID userId);
+
+    /**
+     * Har bir faol Goal uchun uning Task'lari bo'yicha hisoblangan progress statistikasi
+     * (doneCount/totalCount/percentComplete). getActiveGoals bilan bir xil tartibda qaytadi.
+     */
+    Map<Goal, ProgressStats> getGoalsWithProgress(UUID userId);
+
+    record ProgressStats(int doneCount, int totalCount, int percentComplete) {
+    }
 }

@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import uz.nextqadam.bot.ai.AiResponseParseException;
 import uz.nextqadam.bot.ai.AiResponseParser;
+import uz.nextqadam.bot.ai.dto.BrainDumpResult;
 import uz.nextqadam.bot.ai.dto.GoalDecompositionResult;
 
 @Component
@@ -26,9 +27,18 @@ public class AiResponseParserImpl implements AiResponseParser {
 
     @Override
     public GoalDecompositionResult parseGoalDecomposition(String rawJson) {
+        return parse(rawJson, GoalDecompositionResult.class);
+    }
+
+    @Override
+    public BrainDumpResult parseBrainDump(String rawJson) {
+        return parse(rawJson, BrainDumpResult.class);
+    }
+
+    private <T> T parse(String rawJson, Class<T> type) {
         String cleaned = stripMarkdownFence(rawJson);
         try {
-            return objectMapper.readValue(cleaned, GoalDecompositionResult.class);
+            return objectMapper.readValue(cleaned, type);
         } catch (JsonProcessingException e) {
             String logId = UUID.randomUUID().toString();
             if (isLikelyTruncated(e)) {
@@ -39,13 +49,6 @@ public class AiResponseParserImpl implements AiResponseParser {
             }
             throw new AiResponseParseException("AI javobini JSON sifatida o'qib bo'lmadi. logId=" + logId, e);
         }
-    }
-
-    // JsonEOFException — parser oqim tugashini kutmasdan matn tugaganda tashlanadi, bu odatda
-    // generationConfig.maxOutputTokens chegarasiga yetib javob kesilganidan darak beradi.
-    private boolean isLikelyTruncated(JsonProcessingException e) {
-        return e instanceof JsonEOFException
-                || (e.getMessage() != null && e.getMessage().contains("Unexpected end-of-input"));
     }
 
     private String stripMarkdownFence(String raw) {
@@ -60,5 +63,12 @@ public class AiResponseParserImpl implements AiResponseParser {
             }
         }
         return trimmed.trim();
+    }
+
+    // JsonEOFException — parser oqim tugashini kutmasdan matn tugaganda tashlanadi, bu odatda
+    // generationConfig.maxOutputTokens chegarasiga yetib javob kesilganidan darak beradi.
+    private boolean isLikelyTruncated(JsonProcessingException e) {
+        return e instanceof JsonEOFException
+                || (e.getMessage() != null && e.getMessage().contains("Unexpected end-of-input"));
     }
 }

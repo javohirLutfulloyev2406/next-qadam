@@ -41,8 +41,48 @@ public class PromptBuilderImpl implements PromptBuilder {
             }
             """;
 
+    private static final String BRAIN_DUMP_TEMPLATE = """
+            Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. Foydalanuvchi xayoliga kelgan turli \
+            fikrlarni erkin, tartibsiz matn shaklida yozadi. Sening vazifang bu matnni uchta toifaga \
+            ajratish:
+
+            1. "tasks" — aniq bajariladigan, fe'l bilan boshlanadigan ish (masalan: "Hisobotni yubor", \
+            "Kitob sotib ol").
+            2. "ideas" — kelajakda o'ylab ko'rish kerak bo'lgan fikr yoki taklif, hozir bajarilishi shart \
+            bo'lmagan narsa.
+            3. "reminders" — vaqtga bog'liq eslatma (masalan "ertaga qo'ng'iroq qil", "kechqurun dori \
+            ich"). Har bir eslatma uchun "whenHint" maydoniga matndan chiqargan vaqt ishorangni yoz \
+            (masalan "ertaga", "kechqurun") — agar aniq vaqt ishorasi bo'lmasa, bo'sh string qoldir.
+
+            Foydalanuvchi matni: "%s"
+
+            QAT'IY QOIDALAR:
+            1. Javobing FAQAT quyidagi JSON formatida bo'lishi kerak. Hech qanday qo'shimcha matn, izoh \
+            yoki markdown fence (```) bo'lmasin — javobning birinchi belgisi "{" va oxirgi belgisi "}" \
+            bo'lishi shart.
+            2. Har bir massiv har doim mavjud bo'lishi kerak, lekin bo'sh bo'lishi mumkin (masalan hech \
+            qanday g'oya topilmasa "ideas": []).
+            3. Matnni ortiqcha talqin qilma — faqat matnda aniq aytilgan narsalarni ajrat.
+
+            JSON STRUKTURASI:
+            {
+              "tasks": ["..."],
+              "ideas": ["..."],
+              "reminders": [{"content": "...", "whenHint": "..."}]
+            }
+            """;
+
     @Override
-    public String buildGoalDecompositionPrompt(String goalDescription) {
-        return TEMPLATE.formatted(goalDescription);
+    public String buildGoalDecompositionPrompt(String goalDescription, String memoryContext) {
+        String prompt = TEMPLATE.formatted(goalDescription);
+        if (memoryContext != null && !memoryContext.isBlank()) {
+            prompt += "\n\nFoydalanuvchi haqida ma'lum ma'lumotlar:\n" + memoryContext;
+        }
+        return prompt;
+    }
+
+    @Override
+    public String buildBrainDumpPrompt(String rawText) {
+        return BRAIN_DUMP_TEMPLATE.formatted(rawText);
     }
 }

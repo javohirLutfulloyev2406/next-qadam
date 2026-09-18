@@ -11,6 +11,8 @@ public interface UserService {
 
     User createUser(Long telegramId, String name);
 
+    User updateName(UUID userId, String name);
+
     User updateTonePreference(UUID userId, ToneType tone);
 
     User updateTimezone(UUID userId, String timezone);

@@ -2,7 +2,9 @@ package uz.nextqadam.bot.goal.impl;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,6 +28,7 @@ import uz.nextqadam.bot.goal.Milestone;
 import uz.nextqadam.bot.goal.MilestoneRepository;
 import uz.nextqadam.bot.goal.Task;
 import uz.nextqadam.bot.goal.TaskRepository;
+import uz.nextqadam.bot.memory.MemoryService;
 import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserRepository;
 
@@ -45,10 +48,12 @@ public class GoalServiceImpl implements GoalService {
     private final AiClient aiClient;
     private final PromptBuilder promptBuilder;
     private final AiResponseParser aiResponseParser;
+    private final MemoryService memoryService;
 
     public GoalServiceImpl(GoalRepository goalRepository, MilestoneRepository milestoneRepository,
                             TaskRepository taskRepository, UserRepository userRepository,
-                            AiClient aiClient, PromptBuilder promptBuilder, AiResponseParser aiResponseParser) {
+                            AiClient aiClient, PromptBuilder promptBuilder, AiResponseParser aiResponseParser,
+                            MemoryService memoryService) {
         this.goalRepository = goalRepository;
         this.milestoneRepository = milestoneRepository;
         this.taskRepository = taskRepository;
@@ -56,6 +61,7 @@ public class GoalServiceImpl implements GoalService {
         this.aiClient = aiClient;
         this.promptBuilder = promptBuilder;
         this.aiResponseParser = aiResponseParser;
+        this.memoryService = memoryService;
     }
 
     @Override
@@ -72,7 +78,8 @@ public class GoalServiceImpl implements GoalService {
         goal = goalRepository.save(goal);
 
         try {
-            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription);
+            String memoryContext = memoryService.buildContextBlock(userId);
+            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription, memoryContext);
             String rawJson = aiClient.complete(systemPrompt, rawDescription);
             GoalDecompositionResult result = aiResponseParser.parseGoalDecomposition(rawJson);
 
@@ -82,6 +89,8 @@ public class GoalServiceImpl implements GoalService {
             for (MilestoneDraft milestoneDraft : result.milestones()) {
                 createMilestoneWithTasks(goal, milestoneDraft);
             }
+
+            memoryService.remember(userId, "so'nggi_maqsad", goal.getTitle(), 5);
         } catch (AiClientException | AiResponseParseException e) {
             log.error("Maqsadni AI orqali bosqichlarga bo'lishda xatolik yuz berdi. goalId={}", goal.getId(), e);
             goal.setDescription(rawDescription + "\n\n" + AI_DECOMPOSITION_FAILURE_MARKER);
@@ -89,6 +98,22 @@ public class GoalServiceImpl implements GoalService {
         }
 
         return goal;
+    }
+
+    @Override
+    public Goal getOrCreateDailyCatchAllGoal(UUID userId) {
+        return goalRepository.findByUserIdAndTitle(userId, DAILY_CATCH_ALL_GOAL_TITLE)
+                .orElseGet(() -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+                    Goal catchAllGoal = Goal.builder()
+                            .user(user)
+                            .title(DAILY_CATCH_ALL_GOAL_TITLE)
+                            .description("Brain Dump orqali qo'shilgan, aniq maqsadga bog'lanmagan vazifalar uchun.")
+                            .status(Goal.Status.ACTIVE)
+                            .build();
+                    return goalRepository.save(catchAllGoal);
+                });
     }
 
     private void createMilestoneWithTasks(Goal goal, MilestoneDraft milestoneDraft) {
@@ -124,7 +149,14 @@ public class GoalServiceImpl implements GoalService {
 
     @Override
     public Optional<Task> getNextStep(UUID userId) {
-        return taskRepository.findFirstByGoal_User_IdAndStatusOrderByDueDateAsc(userId, Task.Status.PENDING);
+        List<Task> tasks = taskRepository.findByGoal_User_IdAndStatusOrderByIsTodayPriorityDescDueDateAsc(
+                userId, Task.Status.PENDING);
+        return tasks.stream().findFirst();
+    }
+
+    @Override
+    public Optional<Task> getNextStepForGoal(UUID goalId) {
+        return taskRepository.findFirstByGoal_IdAndStatusOrderByIsTodayPriorityDescDueDateAsc(goalId, Task.Status.PENDING);
     }
 
     @Override
@@ -143,6 +175,19 @@ public class GoalServiceImpl implements GoalService {
     @Override
     public List<Goal> getActiveGoals(UUID userId) {
         return goalRepository.findAllByUserIdAndStatus(userId, Goal.Status.ACTIVE);
+    }
+
+    @Override
+    public Map<Goal, ProgressStats> getGoalsWithProgress(UUID userId) {
+        Map<Goal, ProgressStats> goalsWithProgress = new LinkedHashMap<>();
+        for (Goal goal : getActiveGoals(userId)) {
+            List<Task> tasks = taskRepository.findAllByGoalId(goal.getId());
+            int totalCount = tasks.size();
+            int doneCount = (int) tasks.stream().filter(task -> task.getStatus() == Task.Status.DONE).count();
+            int percentComplete = totalCount == 0 ? 0 : (int) Math.round(doneCount * 100.0 / totalCount);
+            goalsWithProgress.put(goal, new ProgressStats(doneCount, totalCount, percentComplete));
+        }
+        return goalsWithProgress;
     }
 
     private String truncate(String text, int maxLength) {

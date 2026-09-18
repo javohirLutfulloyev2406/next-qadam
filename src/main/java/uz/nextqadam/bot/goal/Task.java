@@ -14,6 +14,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -49,6 +50,10 @@ public class Task extends BaseEntity {
 
     @Column(name = "estimated_minutes")
     private Integer estimatedMinutes;
+
+    @Builder.Default
+    @Column(name = "is_today_priority", nullable = false)
+    private boolean isTodayPriority = false;
 
     public enum Status {
         PENDING,

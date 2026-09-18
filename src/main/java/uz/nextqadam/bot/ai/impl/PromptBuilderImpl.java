@@ -24,6 +24,7 @@ public class PromptBuilderImpl implements PromptBuilder {
             4. "period" maydoni faqat "MONTH" yoki "WEEK" qiymatlaridan birini olishi mumkin.
             5. "title" maydonlari qisqa va aniq bo'lsin (maqsad "title"i 80 belgidan oshmasin).
             6. "estimatedMinutes" — butun son, vazifani bajarish uchun taxminiy daqiqalar soni.
+            7. Har bir task "title"i 8 so'zdan oshmasin — qisqa va lo'nda bo'lsin.
 
             JSON STRUKTURASI:
             {

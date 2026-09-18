@@ -83,7 +83,16 @@ public class UpdateDispatcher {
         Long chatId = callbackQuery.getMessage().getChatId();
         String data = callbackQuery.getData();
 
-        if (onboardingHandler.isAwaitingTone(chatId) && onboardingHandler.isToneCallback(data)) {
+        if (onboardingHandler.isToneCallback(data)) {
+            if (!onboardingHandler.isAwaitingTone(chatId)) {
+                // stageByChatId in-memory xotira — instance qayta ishga tushganda yo'qoladi (pastdagi TODO'ga qarang).
+                // Callback data'ning o'zi ("ONBOARDING_TONE_...") tanlovni bir ma'noli aniqlaydi, shu sababli
+                // holat yo'qolgan bo'lsa ham handleToneSelection'ga yo'naltiramiz, aks holda foydalanuvchi
+                // TODO fallback'ga tushib, onboarding jarayoni to'xtab qoladi.
+                log.warn("[{}] Ton callback keldi (callbackData={}), lekin chatId={} uchun AWAITING_TONE holati "
+                        + "topilmadi — ehtimol instance qayta ishga tushgan. Baribir handleToneSelection'ga yo'naltirilmoqda.",
+                        logId, data, chatId);
+            }
             onboardingHandler.handleToneSelection(update);
             return;
         }

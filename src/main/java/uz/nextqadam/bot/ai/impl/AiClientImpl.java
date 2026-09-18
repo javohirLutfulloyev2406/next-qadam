@@ -24,7 +24,7 @@ import uz.nextqadam.bot.ai.AiClientException;
 public class AiClientImpl implements AiClient {
 
     private static final Logger log = LoggerFactory.getLogger(AiClientImpl.class);
-    private static final int MAX_OUTPUT_TOKENS = 2000;
+    private static final int MAX_OUTPUT_TOKENS = 4096;
     private static final double TEMPERATURE = 0.7;
     private static final Set<String> NON_BLOCKING_FINISH_REASONS = Set.of("STOP", "MAX_TOKENS", "");
 

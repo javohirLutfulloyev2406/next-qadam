@@ -2,10 +2,12 @@ package uz.nextqadam.bot.common.telegram.impl;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import uz.nextqadam.bot.common.telegram.TelegramBotFacade;
@@ -18,7 +20,7 @@ public class TelegramExecutorImpl implements TelegramExecutor {
 
     private final TelegramBotFacade telegramBotFacade;
 
-    public TelegramExecutorImpl(TelegramBotFacade telegramBotFacade) {
+    public TelegramExecutorImpl(@Lazy TelegramBotFacade telegramBotFacade) {
         this.telegramBotFacade = telegramBotFacade;
     }
 
@@ -46,6 +48,20 @@ public class TelegramExecutorImpl implements TelegramExecutor {
             telegramBotFacade.execute(message);
         } catch (TelegramApiException e) {
             log.error("Telegram xabar (klaviatura bilan) yuborishda xatolik: chatId={}", chatId, e);
+        }
+    }
+
+    @Override
+    public void sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard) {
+        SendMessage message = SendMessage.builder()
+                .chatId(String.valueOf(chatId))
+                .text(text)
+                .replyMarkup(keyboard)
+                .build();
+        try {
+            telegramBotFacade.execute(message);
+        } catch (TelegramApiException e) {
+            log.error("Telegram xabar (reply klaviatura bilan) yuborishda xatolik: chatId={}", chatId, e);
         }
     }
 

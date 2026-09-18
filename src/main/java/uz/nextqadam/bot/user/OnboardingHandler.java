@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.MessageTemplateService;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -21,15 +22,18 @@ public class OnboardingHandler {
     private final UserService userService;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
+    private final MessageTemplateService messageTemplateService;
 
     // TODO: bu holat xotirasi hozircha in-memory Map orqali saqlanmoqda (bir nechta instance/qayta ishga tushirishda
     // yo'qoladi) — keyinchalik Redis yoki DB (masalan alohida "onboarding_state" jadvali) ga ko'chirish kerak.
     private final Map<Long, OnboardingStage> stageByChatId = new ConcurrentHashMap<>();
 
-    public OnboardingHandler(UserService userService, KeyboardService keyboardService, TelegramExecutor telegramExecutor) {
+    public OnboardingHandler(UserService userService, KeyboardService keyboardService, TelegramExecutor telegramExecutor,
+                              MessageTemplateService messageTemplateService) {
         this.userService = userService;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
+        this.messageTemplateService = messageTemplateService;
     }
 
     public boolean isAwaitingName(Long chatId) {
@@ -51,12 +55,16 @@ public class OnboardingHandler {
         userService.findByTelegramId(chatId).ifPresentOrElse(
                 user -> {
                     stageByChatId.remove(chatId);
-                    telegramExecutor.sendMessage(chatId, "Yana xush kelibsiz, " + user.getName() + "! 👋");
+                    telegramExecutor.sendMessageWithReplyKeyboard(chatId, "Yana xush kelibsiz, " + user.getName() + "! 👋",
+                            keyboardService.buildMainMenuKeyboard());
                 },
                 () -> {
                     stageByChatId.put(chatId, OnboardingStage.AWAITING_NAME);
                     telegramExecutor.sendMessage(chatId,
-                            "Assalomu alaykum! NextQadam botiga xush kelibsiz.\nKeling, tanishaylik — ismingiz nima?");
+                            "👋 Assalomu alaykum! Men NextQadam — katta orzularingni kichik, bajarilishi oson "
+                                    + "qadamlarga bo'lib beruvchi shaxsiy hamrohingman.\n\n"
+                                    + "Katta reja emas — bugungi bitta qadam. Shu tarzda oldinga siljiymiz. 🚀\n\n"
+                                    + "Avval tanishib olaylik — ismingiz nima?");
                 }
         );
     }
@@ -69,7 +77,7 @@ public class OnboardingHandler {
         userService.createUser(chatId, name);
         stageByChatId.put(chatId, OnboardingStage.AWAITING_TONE);
 
-        List<String> labels = List.of("Yumshoq", "Oddiy", "Qattiq", "Hardcore");
+        List<String> labels = List.of("Yumshoq 🌱", "Oddiy 📋", "Qattiq 🔥", "Hardcore ⚡");
         List<String> callbackData = List.of(
                 TONE_CALLBACK_PREFIX + ToneType.SOFT,
                 TONE_CALLBACK_PREFIX + ToneType.NORMAL,
@@ -78,7 +86,11 @@ public class OnboardingHandler {
         );
 
         telegramExecutor.sendMessageWithKeyboard(chatId,
-                "Tanishganimdan xursandman, " + name + "! Endi menga qaysi uslubda gaplashishimni tanlang:",
+                "Tanishganimdan xursandman, " + name + "! Endi menga qaysi uslubda gaplashishimni tanlang:\n\n"
+                        + "🌱 Yumshoq — iliq va tushunuvchan ohangda qo'llab-quvvatlayman\n"
+                        + "📋 Oddiy — sodda va aniq, ortiqcha so'zlarsiz gaplashaman\n"
+                        + "🔥 Qattiq — tik va talabchan, gapni aylantirmayman\n"
+                        + "⚡ Hardcore — hech narsani yumshatmayman, to'g'ridan-to'g'ri aytaman",
                 keyboardService.createInlineKeyboard(labels, callbackData, 2));
     }
 
@@ -92,8 +104,9 @@ public class OnboardingHandler {
         userService.findByTelegramId(chatId).ifPresent(user -> {
             userService.updateTonePreference(user.getId(), tone);
             stageByChatId.remove(chatId);
-            telegramExecutor.sendMessage(chatId,
-                    "Ajoyib! Tanlovingiz saqlandi. Endi birinchi maqsadingizni belgilashdan boshlashimiz mumkin. 🚀");
+            telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+                    messageTemplateService.welcomeAfterTone(tone, user.getName()),
+                    keyboardService.buildMainMenuKeyboard());
         });
     }
 

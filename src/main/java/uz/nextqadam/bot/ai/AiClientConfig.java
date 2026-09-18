@@ -14,14 +14,14 @@ import lombok.Setter;
 @ConfigurationProperties(prefix = "ai.client")
 public class AiClientConfig {
 
-    private static final String ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1";
+    private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
     private String apiKey;
-    private String model = "claude-sonnet-4-6";
+    private String model = "gemini-3.6-flash";
     private int timeoutSeconds = 20;
 
     @Bean
-    public WebClient anthropicWebClient(WebClient.Builder builder) {
-        return builder.baseUrl(ANTHROPIC_BASE_URL).build();
+    public WebClient geminiWebClient(WebClient.Builder builder) {
+        return builder.baseUrl(GEMINI_BASE_URL).build();
     }
 }

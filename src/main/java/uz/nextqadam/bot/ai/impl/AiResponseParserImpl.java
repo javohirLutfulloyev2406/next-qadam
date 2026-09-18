@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.io.JsonEOFException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import uz.nextqadam.bot.ai.AiResponseParseException;
@@ -30,9 +31,21 @@ public class AiResponseParserImpl implements AiResponseParser {
             return objectMapper.readValue(cleaned, GoalDecompositionResult.class);
         } catch (JsonProcessingException e) {
             String logId = UUID.randomUUID().toString();
-            log.error("[{}] AI javobini JSON sifatida parse qilib bo'lmadi. rawJson={}", logId, rawJson, e);
+            if (isLikelyTruncated(e)) {
+                log.error("[{}] TRUNCATED: Gemini javobi kesilgan bo'lishi mumkin (token limit). rawJson={}",
+                        logId, rawJson, e);
+            } else {
+                log.error("[{}] AI javobini JSON sifatida parse qilib bo'lmadi. rawJson={}", logId, rawJson, e);
+            }
             throw new AiResponseParseException("AI javobini JSON sifatida o'qib bo'lmadi. logId=" + logId, e);
         }
+    }
+
+    // JsonEOFException — parser oqim tugashini kutmasdan matn tugaganda tashlanadi, bu odatda
+    // generationConfig.maxOutputTokens chegarasiga yetib javob kesilganidan darak beradi.
+    private boolean isLikelyTruncated(JsonProcessingException e) {
+        return e instanceof JsonEOFException
+                || (e.getMessage() != null && e.getMessage().contains("Unexpected end-of-input"));
     }
 
     private String stripMarkdownFence(String raw) {

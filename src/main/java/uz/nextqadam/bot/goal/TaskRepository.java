@@ -32,4 +32,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * /planday uchun tanlov ro'yxati — ustuvorlikdan qat'i nazar, eng yaqin muddatli PENDING Task'lar.
      */
     List<Task> findByGoal_User_IdAndStatusOrderByDueDateAsc(UUID userId, Task.Status status, Pageable pageable);
+
+    /**
+     * Foydalanuvchining eng so'nggi bajargan Task'i (Companion modulida motivatsion xabar uchun).
+     */
+    Optional<Task> findFirstByGoal_User_IdAndStatusOrderByUpdatedAtDesc(UUID userId, Task.Status status);
+
+    long countByGoal_User_IdAndStatus(UUID userId, Task.Status status);
 }

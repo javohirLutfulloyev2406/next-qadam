@@ -28,7 +28,9 @@ public enum BotCommand {
             "✅ Bajardim", DONE,
             "👤 Profil", PROFILE,
             "🌅 Kun rejasi", PLAN_DAY,
-            "🧠 Fikr tashla", BRAIN_DUMP
+            "🧠 Fikr tashla", BRAIN_DUMP,
+            "🔥 Motivatsiya", MOTIVATE,
+            "🆘 Yordam kerak", SOS
     );
 
     private final String command;

@@ -75,10 +75,15 @@ public class KeyboardServiceImpl implements KeyboardService {
         row3.add("🌅 Kun rejasi");
         row3.add("🧠 Fikr tashla");
 
+        KeyboardRow row4 = new KeyboardRow();
+        row4.add("🔥 Motivatsiya");
+        row4.add("🆘 Yordam kerak");
+
         return ReplyKeyboardMarkup.builder()
                 .keyboardRow(row1)
                 .keyboardRow(row2)
                 .keyboardRow(row3)
+                .keyboardRow(row4)
                 .resizeKeyboard(true)
                 .build();
     }

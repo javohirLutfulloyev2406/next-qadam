@@ -20,4 +20,10 @@ public interface TelegramExecutor {
      * bo'lsa, Telegram klientida modal ogohlantirish sifatida ko'rsatiladi.
      */
     void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert);
+
+    /**
+     * "Yozmoqda..." kabi chat action indikatorini yuboradi (masalan AI javobini kutish paytida).
+     * action qiymati Telegram Bot API'dagi ChatAction nomlariga mos bo'lishi kerak (masalan "typing").
+     */
+    void sendChatAction(Long chatId, String action);
 }

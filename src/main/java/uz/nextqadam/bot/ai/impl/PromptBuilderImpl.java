@@ -1,11 +1,25 @@
 package uz.nextqadam.bot.ai.impl;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Component;
 
 import uz.nextqadam.bot.ai.PromptBuilder;
+import uz.nextqadam.bot.common.enums.ToneType;
 
 @Component
 public class PromptBuilderImpl implements PromptBuilder {
+
+    private static final Map<ToneType, String> FREE_CHAT_PERSONALITY = Map.of(
+            ToneType.SOFT, "Sen mehribon, sabr-toqatli va tushunuvchan hamrohsan. Foydalanuvchini hech qachon "
+                    + "qoralamaysan, uni iliqlik va qo'llab-quvvatlash bilan tinglaysan.",
+            ToneType.NORMAL, "Sen do'stona, sodda va aniq gapiradigan yordamchisan. Ortiqcha his-hayajonsiz, "
+                    + "amaliy va samimiy maslahat berasan.",
+            ToneType.HARD, "Sen tik va talabchan murabbiysan. Bahonalarni yoqtirmaysan, to'g'ridan-to'g'ri va "
+                    + "qisqa gapirasan, lekin foydalanuvchining natijaga erishishini chin dildan xohlaysan.",
+            ToneType.HARDCORE, "Sen qattiqqo'l, lekin g'amxo'r murabbiysan. Bahonalarga toqat qilmaysan, lekin "
+                    + "foydalanuvchining muvaffaqiyatini chin dildan xohlaysan."
+    );
 
     private static final String TEMPLATE = """
             Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. Foydalanuvchi katta \
@@ -84,5 +98,83 @@ public class PromptBuilderImpl implements PromptBuilder {
     @Override
     public String buildBrainDumpPrompt(String rawText) {
         return BRAIN_DUMP_TEMPLATE.formatted(rawText);
+    }
+
+    @Override
+    public String buildFreeChatSystemPrompt(ToneType tone, String memoryContext, String recentGoalsSummary) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. ")
+                .append(FREE_CHAT_PERSONALITY.get(tone))
+                .append("\n\nFoydalanuvchi sen bilan erkin suhbatlashyapti — savolga javob ber, fikr almash yoki "
+                        + "shunchaki suhbatlash.\n");
+
+        boolean hasMemory = memoryContext != null && !memoryContext.isBlank();
+        boolean hasGoals = recentGoalsSummary != null && !recentGoalsSummary.isBlank();
+        if (hasMemory || hasGoals) {
+            sb.append("\nFoydalanuvchi haqida bilganlaringiz:\n");
+            if (hasMemory) {
+                sb.append(memoryContext).append("\n");
+            }
+            if (hasGoals) {
+                sb.append("Faol maqsadlari: ").append(recentGoalsSummary).append("\n");
+            }
+        }
+
+        sb.append("\nMUHIM: Javobing QISQA bo'lsin — 3-4 gapdan oshmasin, Telegram'da o'qilishi qulay bo'lishi "
+                + "uchun. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.");
+        return sb.toString();
+    }
+
+    @Override
+    public String buildMotivationPrompt(ToneType tone, String lastCompletedTask, String activeGoalTitle,
+                                         int completedTaskCount) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. ")
+                .append(FREE_CHAT_PERSONALITY.get(tone))
+                .append("\n\nFoydalanuvchiga o'zining haqiqiy tarixiga asoslangan, umumiy (generic) bo'lmagan, "
+                        + "qisqa motivatsion xabar yoz.\n\n");
+
+        boolean hasCompletedAny = lastCompletedTask != null && !lastCompletedTask.isBlank();
+        boolean hasActiveGoal = activeGoalTitle != null && !activeGoalTitle.isBlank();
+
+        if (hasCompletedAny) {
+            sb.append("Foydalanuvchi so'nggi marta \"").append(lastCompletedTask).append("\" vazifasini bajargan.\n");
+            sb.append("Jami bajargan vazifalari soni: ").append(completedTaskCount).append(".\n");
+        } else {
+            sb.append("Foydalanuvchi hali birorta ham vazifani bajarmagan — bu uning birinchi qadamlari, "
+                    + "shunga mos, boshlash uchun ilhomlantiruvchi ohangda yoz.\n");
+        }
+
+        if (hasActiveGoal) {
+            sb.append("Uning hozirgi faol maqsadi: \"").append(activeGoalTitle).append("\".\n");
+        } else {
+            sb.append("Hozircha faol maqsadi yo'q — /newgoal orqali maqsad qo'yishga undash mumkin.\n");
+        }
+
+        sb.append("\nQAT'IY QOIDALAR:\n");
+        sb.append("1. Javobing FAQAT motivatsion xabarning o'zi bo'lsin — hech qanday izoh, sarlavha yoki "
+                + "qo'shtirnoq bo'lmasin.\n");
+        sb.append("2. Javob 2-3 gapdan oshmasin.\n");
+        sb.append("3. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.\n");
+        return sb.toString();
+    }
+
+    @Override
+    public String buildSosPrompt(ToneType tone, String currentTaskTitle, int estimatedMinutes) {
+        return """
+                Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. %s
+
+                Foydalanuvchi "%s" nomli vazifani bajarishga qiynalyapti (taxminan %d daqiqa vaqt talab qiladi \
+                deb baholangan, lekin hozir buni boshlashga kuchi yetmayapti).
+
+                Vazifangiz: shu vazifani ANIQ 5 daqiqada bajarish mumkin bo'lgan, juda kichik va konkret bitta \
+                harakatga qisqartir — shunday kichik bo'lsinki, foydalanuvchi bahona topa olmasin.
+
+                QAT'IY QOIDALAR:
+                1. Javobing FAQAT bitta qisqa jumla bo'lsin (masalan: "Faqat loyihaning bir faylini ochib, \
+                sarlavhasini yoz").
+                2. Hech qanday izoh, sarlavha, qo'shtirnoq yoki ro'yxat bo'lmasin — faqat harakatning o'zi.
+                3. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.
+                """.formatted(FREE_CHAT_PERSONALITY.get(tone), currentTaskTitle, estimatedMinutes);
     }
 }

@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import uz.nextqadam.bot.common.BotCommand;
 import uz.nextqadam.bot.common.errorlog.ErrorNotificationService;
+import uz.nextqadam.bot.companion.CompanionHandler;
 import uz.nextqadam.bot.goal.GoalHandler;
 import uz.nextqadam.bot.memory.MemoryHandler;
 import uz.nextqadam.bot.plan.PlanHandler;
@@ -28,16 +29,18 @@ public class UpdateDispatcher {
     private final ProfileHandler profileHandler;
     private final MemoryHandler memoryHandler;
     private final PlanHandler planHandler;
+    private final CompanionHandler companionHandler;
     private final ErrorNotificationService errorNotificationService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
-                             ErrorNotificationService errorNotificationService) {
+                             CompanionHandler companionHandler, ErrorNotificationService errorNotificationService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
         this.memoryHandler = memoryHandler;
         this.planHandler = planHandler;
+        this.companionHandler = companionHandler;
         this.errorNotificationService = errorNotificationService;
     }
 
@@ -75,6 +78,8 @@ public class UpdateDispatcher {
                 case PLAN_DAY -> planHandler.handlePlanDayCommand(update);
                 case BRAIN_DUMP -> planHandler.handleBrainDumpCommand(update);
                 case IDEAS -> planHandler.handleIdeasCommand(update);
+                case MOTIVATE -> companionHandler.handleMotivateCommand(update);
+                case SOS -> companionHandler.handleSosCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;
@@ -107,7 +112,9 @@ public class UpdateDispatcher {
             return;
         }
 
-        log.info("[{}] TODO: keyingi modulga ulanadi. matn qabul qilindi, chatId={}", logId, chatId);
+        // Yakuniy fallback: yuqoridagi hech qanday komanda yoki AWAITING_* holatiga mos kelmagan matn —
+        // demak bu erkin suhbat. CompanionHandler AI orqali kontekstli javob beradi.
+        companionHandler.handleFreeChat(update);
     }
 
     private void dispatchCallbackQuery(Update update, String logId) {

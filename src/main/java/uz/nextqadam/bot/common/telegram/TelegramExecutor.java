@@ -11,5 +11,7 @@ public interface TelegramExecutor {
 
     void sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard);
 
-    void editMessage(Long chatId, Integer messageId, String newText);
+    void editMessageText(Long chatId, Integer messageId, String newText);
+
+    void editMessageReplyMarkup(Long chatId, Integer messageId, InlineKeyboardMarkup keyboard);
 }

@@ -2,7 +2,9 @@ package uz.nextqadam.bot.goal.impl;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -135,6 +137,11 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
+    public Optional<Task> getNextStepForGoal(UUID goalId) {
+        return taskRepository.findFirstByGoal_IdAndStatusOrderByDueDateAsc(goalId, Task.Status.PENDING);
+    }
+
+    @Override
     public Optional<Task> getCurrentTaskForUser(UUID userId) {
         return getNextStep(userId);
     }
@@ -150,6 +157,19 @@ public class GoalServiceImpl implements GoalService {
     @Override
     public List<Goal> getActiveGoals(UUID userId) {
         return goalRepository.findAllByUserIdAndStatus(userId, Goal.Status.ACTIVE);
+    }
+
+    @Override
+    public Map<Goal, ProgressStats> getGoalsWithProgress(UUID userId) {
+        Map<Goal, ProgressStats> goalsWithProgress = new LinkedHashMap<>();
+        for (Goal goal : getActiveGoals(userId)) {
+            List<Task> tasks = taskRepository.findAllByGoalId(goal.getId());
+            int totalCount = tasks.size();
+            int doneCount = (int) tasks.stream().filter(task -> task.getStatus() == Task.Status.DONE).count();
+            int percentComplete = totalCount == 0 ? 0 : (int) Math.round(doneCount * 100.0 / totalCount);
+            goalsWithProgress.put(goal, new ProgressStats(doneCount, totalCount, percentComplete));
+        }
+        return goalsWithProgress;
     }
 
     private String truncate(String text, int maxLength) {

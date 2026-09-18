@@ -65,6 +65,7 @@ public class UpdateDispatcher {
                 case NEW_GOAL -> goalHandler.handleNewGoalCommand(update);
                 case NEXT_STEP -> goalHandler.handleNextStepCommand(update);
                 case DONE -> goalHandler.handleDoneCommand(update);
+                case GOALS -> goalHandler.handleGoalsCommand(update);
                 case PROFILE -> profileHandler.handleProfileCommand(update);
                 case MEMORY -> memoryHandler.handleMemoryCommand(update);
                 case FORGET -> memoryHandler.handleForgetCommand(update);
@@ -159,6 +160,16 @@ public class UpdateDispatcher {
 
         if (memoryHandler.isMemoryDeleteOne(data)) {
             memoryHandler.handleDeleteOneCallback(update);
+            return;
+        }
+
+        if (goalHandler.isTaskDoneCallback(data)) {
+            goalHandler.handleTaskDoneCallback(update);
+            return;
+        }
+
+        if (goalHandler.isGoalsNextStepCallback(data)) {
+            goalHandler.handleGoalsNextStepCallback(update);
             return;
         }
 

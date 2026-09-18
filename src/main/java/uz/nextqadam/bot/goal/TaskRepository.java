@@ -14,4 +14,6 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findAllByStatusAndDueDateBefore(Task.Status status, Instant dueDate);
 
     Optional<Task> findFirstByGoal_User_IdAndStatusOrderByDueDateAsc(UUID userId, Task.Status status);
+
+    Optional<Task> findFirstByGoal_IdAndStatusOrderByDueDateAsc(UUID goalId, Task.Status status);
 }

@@ -3,6 +3,7 @@ package uz.nextqadam.bot.common.keyboard.impl;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -115,6 +116,20 @@ public class KeyboardServiceImpl implements KeyboardService {
                 button("❌ Bekor qilish", "MEMORY_DELETE_ALL_CANCEL")
         ));
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildTaskActionKeyboard(UUID taskId) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(button("✅ Bajardim", "TASK_DONE_" + taskId))))
+                .build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildGoalsNextStepKeyboard(UUID goalId) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(button("📌 Keyingi qadamni ko'rish", "GOALS_NEXTSTEP_" + goalId))))
+                .build();
     }
 
     private InlineKeyboardButton button(String label, String callbackData) {

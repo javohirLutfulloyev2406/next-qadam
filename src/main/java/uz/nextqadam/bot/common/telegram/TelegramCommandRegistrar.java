@@ -24,6 +24,7 @@ public class TelegramCommandRegistrar {
             uz.nextqadam.bot.common.BotCommand.NEW_GOAL,
             uz.nextqadam.bot.common.BotCommand.NEXT_STEP,
             uz.nextqadam.bot.common.BotCommand.DONE,
+            uz.nextqadam.bot.common.BotCommand.GOALS,
             uz.nextqadam.bot.common.BotCommand.PROFILE,
             uz.nextqadam.bot.common.BotCommand.MEMORY,
             uz.nextqadam.bot.common.BotCommand.FORGET

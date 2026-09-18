@@ -26,6 +26,18 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildConfirmDeleteAllKeyboard();
 
     /**
+     * Bitta Task uchun "✅ Bajardim" tugmasi (callbackData "TASK_DONE_{taskId}") — /nextstep va /goals
+     * oqimlarida bir xil interaktiv kartochka ko'rinishini ta'minlaydi.
+     */
+    InlineKeyboardMarkup buildTaskActionKeyboard(UUID taskId);
+
+    /**
+     * /goals panelidagi har bir Goal bloki uchun "📌 Keyingi qadamni ko'rish" tugmasi
+     * (callbackData "GOALS_NEXTSTEP_{goalId}").
+     */
+    InlineKeyboardMarkup buildGoalsNextStepKeyboard(UUID goalId);
+
+    /**
      * /memory ro'yxatida bitta tugma uchun kerakli minimal ma'lumot — KeyboardService'ni memory modulining
      * MemoryItem entity'siga bog'lab qo'ymaslik uchun shu yerda alohida (yupqa) DTO sifatida e'lon qilingan.
      */

@@ -38,9 +38,23 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildGoalsNextStepKeyboard(UUID goalId);
 
     /**
+     * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
+     * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
+     * (callbackData "CHECKIN_CONFIRM").
+     */
+    InlineKeyboardMarkup buildMorningCheckinKeyboard(List<CheckinTaskOption> options);
+
+    /**
      * /memory ro'yxatida bitta tugma uchun kerakli minimal ma'lumot — KeyboardService'ni memory modulining
      * MemoryItem entity'siga bog'lab qo'ymaslik uchun shu yerda alohida (yupqa) DTO sifatida e'lon qilingan.
      */
     record MemoryListOption(UUID id, String label) {
+    }
+
+    /**
+     * buildMorningCheckinKeyboard uchun kerakli minimal ma'lumot — KeyboardService'ni goal modulining
+     * Task entity'siga bog'lab qo'ymaslik uchun shu yerda alohida (yupqa) DTO sifatida e'lon qilingan.
+     */
+    record CheckinTaskOption(UUID id, String title, boolean selected) {
     }
 }

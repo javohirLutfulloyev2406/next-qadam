@@ -15,7 +15,19 @@ public interface GoalService {
      */
     String AI_DECOMPOSITION_FAILURE_MARKER = "[AI_DECOMPOSITION_FAILED]";
 
+    /**
+     * Brain Dump'dan kelgan, aniq Goal'ga bog'lanmagan tasklar uchun "quti" vazifasini bajaruvchi
+     * maxsus Goal'ning nomi (Task.goal har doim majburiy bo'lgani uchun kerak).
+     */
+    String DAILY_CATCH_ALL_GOAL_TITLE = "📥 Kundalik ishlar";
+
     Goal createGoalWithAiDecomposition(UUID userId, String rawDescription);
+
+    /**
+     * Foydalanuvchining DAILY_CATCH_ALL_GOAL_TITLE nomli maxsus Goal'ini qaytaradi — mavjud bo'lmasa
+     * ACTIVE holatda yaratadi.
+     */
+    Goal getOrCreateDailyCatchAllGoal(UUID userId);
 
     Optional<Task> getNextStep(UUID userId);
 

@@ -27,7 +27,10 @@ public class TelegramCommandRegistrar {
             uz.nextqadam.bot.common.BotCommand.GOALS,
             uz.nextqadam.bot.common.BotCommand.PROFILE,
             uz.nextqadam.bot.common.BotCommand.MEMORY,
-            uz.nextqadam.bot.common.BotCommand.FORGET
+            uz.nextqadam.bot.common.BotCommand.FORGET,
+            uz.nextqadam.bot.common.BotCommand.PLAN_DAY,
+            uz.nextqadam.bot.common.BotCommand.BRAIN_DUMP,
+            uz.nextqadam.bot.common.BotCommand.IDEAS
     );
 
     private final TelegramBotFacade telegramBotFacade;

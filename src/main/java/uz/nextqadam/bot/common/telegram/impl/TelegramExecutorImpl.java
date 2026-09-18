@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -99,6 +100,20 @@ public class TelegramExecutorImpl implements TelegramExecutor {
             telegramBotFacade.execute(message);
         } catch (TelegramApiException e) {
             log.error("Telegram xabar klaviaturasini tahrirlashda xatolik: chatId={}, messageId={}", chatId, messageId, e);
+        }
+    }
+
+    @Override
+    public void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert) {
+        AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackQueryId)
+                .text(text)
+                .showAlert(showAlert)
+                .build();
+        try {
+            telegramBotFacade.execute(answer);
+        } catch (TelegramApiException e) {
+            log.error("Callback query'ga javob berishda xatolik: callbackQueryId={}", callbackQueryId, e);
         }
     }
 }

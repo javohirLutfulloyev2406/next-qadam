@@ -100,6 +100,22 @@ public class GoalServiceImpl implements GoalService {
         return goal;
     }
 
+    @Override
+    public Goal getOrCreateDailyCatchAllGoal(UUID userId) {
+        return goalRepository.findByUserIdAndTitle(userId, DAILY_CATCH_ALL_GOAL_TITLE)
+                .orElseGet(() -> {
+                    User user = userRepository.findById(userId)
+                            .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+                    Goal catchAllGoal = Goal.builder()
+                            .user(user)
+                            .title(DAILY_CATCH_ALL_GOAL_TITLE)
+                            .description("Brain Dump orqali qo'shilgan, aniq maqsadga bog'lanmagan vazifalar uchun.")
+                            .status(Goal.Status.ACTIVE)
+                            .build();
+                    return goalRepository.save(catchAllGoal);
+                });
+    }
+
     private void createMilestoneWithTasks(Goal goal, MilestoneDraft milestoneDraft) {
         Milestone.Period period = Milestone.Period.valueOf(milestoneDraft.period());
 
@@ -133,12 +149,14 @@ public class GoalServiceImpl implements GoalService {
 
     @Override
     public Optional<Task> getNextStep(UUID userId) {
-        return taskRepository.findFirstByGoal_User_IdAndStatusOrderByDueDateAsc(userId, Task.Status.PENDING);
+        List<Task> tasks = taskRepository.findByGoal_User_IdAndStatusOrderByIsTodayPriorityDescDueDateAsc(
+                userId, Task.Status.PENDING);
+        return tasks.stream().findFirst();
     }
 
     @Override
     public Optional<Task> getNextStepForGoal(UUID goalId) {
-        return taskRepository.findFirstByGoal_IdAndStatusOrderByDueDateAsc(goalId, Task.Status.PENDING);
+        return taskRepository.findFirstByGoal_IdAndStatusOrderByIsTodayPriorityDescDueDateAsc(goalId, Task.Status.PENDING);
     }
 
     @Override

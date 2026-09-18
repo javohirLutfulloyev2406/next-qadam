@@ -25,6 +25,8 @@ public class KeyboardServiceImpl implements KeyboardService {
     );
 
     private static final int MEMORY_BUTTON_LABEL_MAX_LENGTH = 30;
+    private static final int CHECKIN_BUTTON_LABEL_MAX_LENGTH = 30;
+    private static final int MAX_TODAY_PRIORITIES = 3;
 
     @Override
     public InlineKeyboardMarkup createInlineKeyboard(List<String> labels, List<String> callbackData, int columns) {
@@ -69,9 +71,14 @@ public class KeyboardServiceImpl implements KeyboardService {
         row2.add("✅ Bajardim");
         row2.add("👤 Profil");
 
+        KeyboardRow row3 = new KeyboardRow();
+        row3.add("🌅 Kun rejasi");
+        row3.add("🧠 Fikr tashla");
+
         return ReplyKeyboardMarkup.builder()
                 .keyboardRow(row1)
                 .keyboardRow(row2)
+                .keyboardRow(row3)
                 .resizeKeyboard(true)
                 .build();
     }
@@ -130,6 +137,22 @@ public class KeyboardServiceImpl implements KeyboardService {
         return InlineKeyboardMarkup.builder()
                 .keyboard(List.of(List.of(button("📌 Keyingi qadamni ko'rish", "GOALS_NEXTSTEP_" + goalId))))
                 .build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildMorningCheckinKeyboard(List<CheckinTaskOption> options) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        int selectedCount = 0;
+        for (CheckinTaskOption option : options) {
+            String checkbox = option.selected() ? "☑️ " : "⬜ ";
+            rows.add(List.of(button(checkbox + truncate(option.title(), CHECKIN_BUTTON_LABEL_MAX_LENGTH),
+                    "CHECKIN_TOGGLE_" + option.id())));
+            if (option.selected()) {
+                selectedCount++;
+            }
+        }
+        rows.add(List.of(button("✅ Tasdiqlash (" + selectedCount + "/" + MAX_TODAY_PRIORITIES + ")", "CHECKIN_CONFIRM")));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
     private InlineKeyboardButton button(String label, String callbackData) {

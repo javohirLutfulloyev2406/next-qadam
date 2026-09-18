@@ -16,14 +16,19 @@ public enum BotCommand {
     NEW_GOAL("/newgoal", "Yangi maqsad qo'shish"),
     NEXT_STEP("/nextstep", "Bugungi keyingi qadamni ko'rsatish"),
     DONE("/done", "Joriy vazifani bajarilgan deb belgilash"),
-    GOALS("/goals", "Faol maqsadlarni ko'rish");
+    GOALS("/goals", "Faol maqsadlarni ko'rish"),
+    PLAN_DAY("/planday", "Bugungi ustuvor vazifalarni belgilash"),
+    BRAIN_DUMP("/braindump", "Fikrlarni tez yozib tashlash"),
+    IDEAS("/ideas", "Saqlangan g'oyalarni ko'rish");
 
     // Doimiy tugmalar panelidagi (ReplyKeyboard) matnlarni tegishli komandaga bog'lash uchun.
     private static final Map<String, BotCommand> BUTTON_LABEL_TO_COMMAND = Map.of(
             "🎯 Yangi maqsad", NEW_GOAL,
             "📌 Keyingi qadam", NEXT_STEP,
             "✅ Bajardim", DONE,
-            "👤 Profil", PROFILE
+            "👤 Profil", PROFILE,
+            "🌅 Kun rejasi", PLAN_DAY,
+            "🧠 Fikr tashla", BRAIN_DUMP
     );
 
     private final String command;

@@ -14,4 +14,10 @@ public interface TelegramExecutor {
     void editMessageText(Long chatId, Integer messageId, String newText);
 
     void editMessageReplyMarkup(Long chatId, Integer messageId, InlineKeyboardMarkup keyboard);
+
+    /**
+     * Callback query'ga tezkor "toast" javob (masalan cheklovni bildirish uchun). showAlert=true
+     * bo'lsa, Telegram klientida modal ogohlantirish sifatida ko'rsatiladi.
+     */
+    void answerCallbackQuery(String callbackQueryId, String text, boolean showAlert);
 }

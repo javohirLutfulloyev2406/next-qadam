@@ -18,11 +18,10 @@ public class AiResponseParserImpl implements AiResponseParser {
 
     private static final Logger log = LoggerFactory.getLogger(AiResponseParserImpl.class);
 
-    private final ObjectMapper objectMapper;
-
-    public AiResponseParserImpl(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+    // Spring Boot 4'ning Jackson auto-configuratsiyasi Jackson 3 (tools.jackson) uchun ObjectMapper bean
+    // yaratadi, klassik com.fasterxml.jackson.databind.ObjectMapper uchun bean mavjud emas — shu sababli
+    // o'zimiz instansiya yaratamiz.
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public GoalDecompositionResult parseGoalDecomposition(String rawJson) {

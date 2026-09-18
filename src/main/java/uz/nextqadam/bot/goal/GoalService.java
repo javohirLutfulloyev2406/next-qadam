@@ -18,6 +18,13 @@ public interface GoalService {
 
     Optional<Task> getNextStep(UUID userId);
 
+    /**
+     * getNextStep bilan bir xil logikani ishlatadi — foydalanuvchining eng yaqin
+     * PENDING Task'ini qaytaradi. "Joriy vazifa"ni aniqroq ifodalash uchun alohida
+     * nom bilan taqdim etiladi (masalan /done oqimida ishlatiladi).
+     */
+    Optional<Task> getCurrentTaskForUser(UUID userId);
+
     Task markTaskDone(UUID taskId);
 
     List<Goal> getActiveGoals(UUID userId);

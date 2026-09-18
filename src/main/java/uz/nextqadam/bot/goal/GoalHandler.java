@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserService;
@@ -23,14 +25,21 @@ public class GoalHandler {
     private final GoalService goalService;
     private final UserService userService;
     private final MilestoneRepository milestoneRepository;
+    private final TaskRepository taskRepository;
     private final TelegramExecutor telegramExecutor;
+    private final KeyboardService keyboardService;
+    private final MessageTemplateService messageTemplateService;
 
     public GoalHandler(GoalService goalService, UserService userService, MilestoneRepository milestoneRepository,
-                        TelegramExecutor telegramExecutor) {
+                        TaskRepository taskRepository, TelegramExecutor telegramExecutor, KeyboardService keyboardService,
+                        MessageTemplateService messageTemplateService) {
         this.goalService = goalService;
         this.userService = userService;
         this.milestoneRepository = milestoneRepository;
+        this.taskRepository = taskRepository;
         this.telegramExecutor = telegramExecutor;
+        this.keyboardService = keyboardService;
+        this.messageTemplateService = messageTemplateService;
     }
 
     public boolean isAwaitingGoalDescription(Long chatId) {
@@ -60,13 +69,16 @@ public class GoalHandler {
         Goal goal = goalService.createGoalWithAiDecomposition(user.getId(), rawDescription);
 
         if (goal.getDescription() != null && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_FAILURE_MARKER)) {
-            telegramExecutor.sendMessage(chatId,
+            telegramExecutor.sendMessageWithReplyKeyboard(chatId,
                     "🎯 Maqsadingiz saqlandi, lekin uni bosqichlarga bo'lishda xatolik yuz berdi. "
-                            + "Birozdan so'ng /newgoal orqali qayta urinib ko'ring.");
+                            + "Birozdan so'ng /newgoal orqali qayta urinib ko'ring.",
+                    keyboardService.buildMainMenuKeyboard());
             return;
         }
 
-        telegramExecutor.sendMessage(chatId, formatGoalSummary(goal));
+        String intro = messageTemplateService.goalDecompositionIntro(user.getTonePreference());
+        telegramExecutor.sendMessageWithReplyKeyboard(chatId, intro + "\n\n" + formatGoalSummary(goal),
+                keyboardService.buildMainMenuKeyboard());
 
         goalService.getNextStep(user.getId())
                 .ifPresent(task -> telegramExecutor.sendMessage(chatId, "📌 Bugungi NextQadam: " + task.getTitle()));
@@ -81,20 +93,57 @@ public class GoalHandler {
         }
 
         goalService.getNextStep(user.getId()).ifPresentOrElse(
-                task -> telegramExecutor.sendMessage(chatId, "📌 Bugungi NextQadam: " + task.getTitle()),
-                () -> telegramExecutor.sendMessage(chatId, "Sizda hali faol maqsad yo'q. /newgoal orqali birinchi maqsadingizni qo'shing.")
+                task -> telegramExecutor.sendMessageWithReplyKeyboard(chatId, "📌 Bugungi NextQadam: " + task.getTitle(),
+                        keyboardService.buildMainMenuKeyboard()),
+                () -> telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+                        messageTemplateService.noPendingTask(user.getTonePreference()),
+                        keyboardService.buildMainMenuKeyboard())
+        );
+    }
+
+    public void handleDoneCommand(Update update) {
+        Long chatId = update.getMessage().getChatId();
+        User user = userService.findByTelegramId(chatId).orElse(null);
+        if (user == null) {
+            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            return;
+        }
+
+        goalService.getCurrentTaskForUser(user.getId()).ifPresentOrElse(
+                task -> {
+                    goalService.markTaskDone(task.getId());
+                    telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+                            messageTemplateService.taskDoneCongrats(user.getTonePreference(), task.getTitle()),
+                            keyboardService.buildMainMenuKeyboard());
+
+                    goalService.getNextStep(user.getId()).ifPresentOrElse(
+                            nextTask -> telegramExecutor.sendMessage(chatId, "📌 Keyingi qadam: " + nextTask.getTitle()),
+                            () -> telegramExecutor.sendMessage(chatId, "Bugungi barcha vazifalar tugadi! 🎉")
+                    );
+                },
+                () -> telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+                        messageTemplateService.noPendingTask(user.getTonePreference()),
+                        keyboardService.buildMainMenuKeyboard())
         );
     }
 
     private String formatGoalSummary(Goal goal) {
         List<Milestone> milestones = milestoneRepository.findAllByGoalId(goal.getId());
+        int totalTasks = taskRepository.findAllByGoalId(goal.getId()).size();
 
         StringBuilder sb = new StringBuilder();
         sb.append("🎯 <b>").append(goal.getTitle()).append("</b>\n\n");
         for (int i = 0; i < milestones.size(); i++) {
-            sb.append(numberEmoji(i + 1)).append(" ").append(milestones.get(i).getTitle()).append("\n");
+            Milestone milestone = milestones.get(i);
+            sb.append(numberEmoji(i + 1)).append(" ").append(periodEmoji(milestone.getPeriod()))
+                    .append(" ").append(milestone.getTitle()).append("\n");
         }
+        sb.append("\nJami: ").append(milestones.size()).append(" bosqich, ").append(totalTasks).append(" vazifa");
         return sb.toString();
+    }
+
+    private String periodEmoji(Milestone.Period period) {
+        return period == Milestone.Period.MONTH ? "🗓️" : "📆";
     }
 
     private String numberEmoji(int number) {

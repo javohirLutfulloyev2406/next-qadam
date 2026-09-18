@@ -1,8 +1,10 @@
 package uz.nextqadam.bot.ai.impl;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import uz.nextqadam.bot.ai.AiClient;
 import uz.nextqadam.bot.ai.AiClientConfig;
@@ -21,14 +24,20 @@ import uz.nextqadam.bot.ai.AiClientException;
 public class AiClientImpl implements AiClient {
 
     private static final Logger log = LoggerFactory.getLogger(AiClientImpl.class);
-    private static final String ANTHROPIC_VERSION = "2023-06-01";
-    private static final int MAX_TOKENS = 2000;
+    private static final int MAX_OUTPUT_TOKENS = 2000;
+    private static final double TEMPERATURE = 0.7;
+    private static final Set<String> NON_BLOCKING_FINISH_REASONS = Set.of("STOP", "MAX_TOKENS", "");
 
-    private final WebClient anthropicWebClient;
+    // Spring Boot 4'ning WebClient auto-configuratsiyasi Jackson 3 (tools.jackson) asosida ishlaydi,
+    // shu sababli klassik com.fasterxml.jackson.databind.JsonNode uchun HttpMessageReader mavjud emas —
+    // javobni String sifatida olib, o'zimizning ObjectMapper bilan qo'lda parse qilamiz.
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    private final WebClient geminiWebClient;
     private final AiClientConfig config;
 
-    public AiClientImpl(WebClient anthropicWebClient, AiClientConfig config) {
-        this.anthropicWebClient = anthropicWebClient;
+    public AiClientImpl(WebClient geminiWebClient, AiClientConfig config) {
+        this.geminiWebClient = geminiWebClient;
         this.config = config;
     }
 
@@ -36,29 +45,49 @@ public class AiClientImpl implements AiClient {
     public String complete(String systemPrompt, String userPrompt) {
         String logId = UUID.randomUUID().toString();
         Map<String, Object> requestBody = Map.of(
-                "model", config.getModel(),
-                "max_tokens", MAX_TOKENS,
-                "system", systemPrompt,
-                "messages", List.of(Map.of("role", "user", "content", userPrompt))
+                "system_instruction", Map.of("parts", List.of(Map.of("text", systemPrompt))),
+                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", userPrompt)))),
+                "generationConfig", Map.of(
+                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
+                        "temperature", TEMPERATURE,
+                        "response_mime_type", "application/json"
+                )
         );
 
         try {
-            JsonNode response = anthropicWebClient.post()
-                    .uri("/messages")
-                    .header("x-api-key", config.getApiKey())
-                    .header("anthropic-version", ANTHROPIC_VERSION)
+            String rawResponse = geminiWebClient.post()
+                    .uri(uriBuilder -> {
+                        URI uri = uriBuilder.path("/models/{model}:generateContent").build(config.getModel());
+                        log.info("[{}] Gemini so'rov URL: {}", logId, uri);
+                        return uri;
+                    })
+                    .header("x-goog-api-key", config.getApiKey())
                     .contentType(MediaType.APPLICATION_JSON)
                     .bodyValue(requestBody)
                     .retrieve()
-                    .bodyToMono(JsonNode.class)
+                    .bodyToMono(String.class)
                     .timeout(Duration.ofSeconds(config.getTimeoutSeconds()))
                     .retry(1)
                     .block();
 
-            if (response == null) {
+            if (rawResponse == null) {
                 throw new AiClientException("AI provayderdan bo'sh javob keldi. logId=" + logId, null);
             }
-            return response.path("content").path(0).path("text").asText();
+
+            JsonNode response = OBJECT_MAPPER.readTree(rawResponse);
+            JsonNode candidates = response.path("candidates");
+            if (!candidates.isArray() || candidates.isEmpty()) {
+                throw new AiClientException("Gemini javob qaytarmadi (candidates bo'sh). logId=" + logId, null);
+            }
+
+            JsonNode firstCandidate = candidates.get(0);
+            String finishReason = firstCandidate.path("finishReason").asText("");
+            if (!NON_BLOCKING_FINISH_REASONS.contains(finishReason)) {
+                throw new AiClientException(
+                        "Gemini javobni bloklanishi (finishReason=" + finishReason + "). logId=" + logId, null);
+            }
+
+            return firstCandidate.path("content").path("parts").path(0).path("text").asText();
         } catch (AiClientException e) {
             throw e;
         } catch (Exception e) {

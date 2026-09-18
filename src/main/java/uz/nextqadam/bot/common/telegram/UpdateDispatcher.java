@@ -49,12 +49,15 @@ public class UpdateDispatcher {
         Long chatId = message.getChatId();
         String text = message.getText();
 
-        Optional<BotCommand> command = BotCommand.fromText(text);
+        Optional<BotCommand> command = (text != null && text.startsWith("/"))
+                ? BotCommand.fromText(text)
+                : BotCommand.fromButtonLabel(text);
         if (command.isPresent()) {
             switch (command.get()) {
                 case START -> onboardingHandler.handleStart(update);
                 case NEW_GOAL -> goalHandler.handleNewGoalCommand(update);
                 case NEXT_STEP -> goalHandler.handleNextStepCommand(update);
+                case DONE -> goalHandler.handleDoneCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;

@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 
@@ -42,6 +44,23 @@ public class KeyboardServiceImpl implements KeyboardService {
 
         return InlineKeyboardMarkup.builder()
                 .keyboard(rows)
+                .build();
+    }
+
+    @Override
+    public ReplyKeyboardMarkup buildMainMenuKeyboard() {
+        KeyboardRow row1 = new KeyboardRow();
+        row1.add("🎯 Yangi maqsad");
+        row1.add("📌 Keyingi qadam");
+
+        KeyboardRow row2 = new KeyboardRow();
+        row2.add("✅ Bajardim");
+        row2.add("👤 Profil");
+
+        return ReplyKeyboardMarkup.builder()
+                .keyboardRow(row1)
+                .keyboardRow(row2)
+                .resizeKeyboard(true)
                 .build();
     }
 }

@@ -128,6 +128,11 @@ public class GoalServiceImpl implements GoalService {
     }
 
     @Override
+    public Optional<Task> getCurrentTaskForUser(UUID userId) {
+        return getNextStep(userId);
+    }
+
+    @Override
     public Task markTaskDone(UUID taskId) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NextQadamException("Task topilmadi: " + taskId));

@@ -42,7 +42,11 @@ public class PromptBuilderImpl implements PromptBuilder {
             """;
 
     @Override
-    public String buildGoalDecompositionPrompt(String goalDescription) {
-        return TEMPLATE.formatted(goalDescription);
+    public String buildGoalDecompositionPrompt(String goalDescription, String memoryContext) {
+        String prompt = TEMPLATE.formatted(goalDescription);
+        if (memoryContext != null && !memoryContext.isBlank()) {
+            prompt += "\n\nFoydalanuvchi haqida ma'lum ma'lumotlar:\n" + memoryContext;
+        }
+        return prompt;
     }
 }

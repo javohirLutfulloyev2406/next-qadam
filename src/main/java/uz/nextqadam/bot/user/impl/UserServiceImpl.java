@@ -36,6 +36,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User updateName(UUID userId, String name) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+        user.setName(name);
+        return userRepository.save(user);
+    }
+
+    @Override
     public User updateTonePreference(UUID userId, ToneType tone) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));

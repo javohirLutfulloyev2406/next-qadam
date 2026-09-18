@@ -13,7 +13,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import uz.nextqadam.bot.common.BotCommand;
 import uz.nextqadam.bot.common.errorlog.ErrorNotificationService;
 import uz.nextqadam.bot.goal.GoalHandler;
+import uz.nextqadam.bot.memory.MemoryHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
+import uz.nextqadam.bot.user.ProfileHandler;
 
 @Component
 public class UpdateDispatcher {
@@ -22,12 +24,17 @@ public class UpdateDispatcher {
 
     private final OnboardingHandler onboardingHandler;
     private final GoalHandler goalHandler;
+    private final ProfileHandler profileHandler;
+    private final MemoryHandler memoryHandler;
     private final ErrorNotificationService errorNotificationService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
+                             ProfileHandler profileHandler, MemoryHandler memoryHandler,
                              ErrorNotificationService errorNotificationService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
+        this.profileHandler = profileHandler;
+        this.memoryHandler = memoryHandler;
         this.errorNotificationService = errorNotificationService;
     }
 
@@ -58,6 +65,9 @@ public class UpdateDispatcher {
                 case NEW_GOAL -> goalHandler.handleNewGoalCommand(update);
                 case NEXT_STEP -> goalHandler.handleNextStepCommand(update);
                 case DONE -> goalHandler.handleDoneCommand(update);
+                case PROFILE -> profileHandler.handleProfileCommand(update);
+                case MEMORY -> memoryHandler.handleMemoryCommand(update);
+                case FORGET -> memoryHandler.handleForgetCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;
@@ -72,6 +82,16 @@ public class UpdateDispatcher {
 
         if (goalHandler.isAwaitingGoalDescription(chatId)) {
             goalHandler.handleGoalDescription(update);
+            return;
+        }
+
+        if (profileHandler.isAwaitingProfileName(chatId)) {
+            profileHandler.handleNameInput(update);
+            return;
+        }
+
+        if (profileHandler.isAwaitingProfileTimezone(chatId)) {
+            profileHandler.handleTimezoneInput(update);
             return;
         }
 
@@ -94,6 +114,51 @@ public class UpdateDispatcher {
                         logId, data, chatId);
             }
             onboardingHandler.handleToneSelection(update);
+            return;
+        }
+
+        if (profileHandler.isEditNameCallback(data)) {
+            profileHandler.handleEditNameCallback(update);
+            return;
+        }
+
+        if (profileHandler.isEditToneCallback(data)) {
+            profileHandler.handleEditToneCallback(update);
+            return;
+        }
+
+        if (profileHandler.isEditTimezoneCallback(data)) {
+            profileHandler.handleEditTimezoneCallback(update);
+            return;
+        }
+
+        if (profileHandler.isProfileToneCallback(data)) {
+            profileHandler.handleToneCallback(update);
+            return;
+        }
+
+        if (memoryHandler.isMemoryView(data)) {
+            memoryHandler.handleMemoryViewCallback(update);
+            return;
+        }
+
+        if (memoryHandler.isMemoryDeleteAllAsk(data)) {
+            memoryHandler.handleDeleteAllAskCallback(update);
+            return;
+        }
+
+        if (memoryHandler.isMemoryDeleteAllConfirm(data)) {
+            memoryHandler.handleDeleteAllConfirmCallback(update);
+            return;
+        }
+
+        if (memoryHandler.isMemoryDeleteAllCancel(data)) {
+            memoryHandler.handleDeleteAllCancelCallback(update);
+            return;
+        }
+
+        if (memoryHandler.isMemoryDeleteOne(data)) {
+            memoryHandler.handleDeleteOneCallback(update);
             return;
         }
 

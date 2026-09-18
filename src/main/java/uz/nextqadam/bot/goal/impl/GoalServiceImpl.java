@@ -26,6 +26,7 @@ import uz.nextqadam.bot.goal.Milestone;
 import uz.nextqadam.bot.goal.MilestoneRepository;
 import uz.nextqadam.bot.goal.Task;
 import uz.nextqadam.bot.goal.TaskRepository;
+import uz.nextqadam.bot.memory.MemoryService;
 import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserRepository;
 
@@ -45,10 +46,12 @@ public class GoalServiceImpl implements GoalService {
     private final AiClient aiClient;
     private final PromptBuilder promptBuilder;
     private final AiResponseParser aiResponseParser;
+    private final MemoryService memoryService;
 
     public GoalServiceImpl(GoalRepository goalRepository, MilestoneRepository milestoneRepository,
                             TaskRepository taskRepository, UserRepository userRepository,
-                            AiClient aiClient, PromptBuilder promptBuilder, AiResponseParser aiResponseParser) {
+                            AiClient aiClient, PromptBuilder promptBuilder, AiResponseParser aiResponseParser,
+                            MemoryService memoryService) {
         this.goalRepository = goalRepository;
         this.milestoneRepository = milestoneRepository;
         this.taskRepository = taskRepository;
@@ -56,6 +59,7 @@ public class GoalServiceImpl implements GoalService {
         this.aiClient = aiClient;
         this.promptBuilder = promptBuilder;
         this.aiResponseParser = aiResponseParser;
+        this.memoryService = memoryService;
     }
 
     @Override
@@ -72,7 +76,8 @@ public class GoalServiceImpl implements GoalService {
         goal = goalRepository.save(goal);
 
         try {
-            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription);
+            String memoryContext = memoryService.buildContextBlock(userId);
+            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription, memoryContext);
             String rawJson = aiClient.complete(systemPrompt, rawDescription);
             GoalDecompositionResult result = aiResponseParser.parseGoalDecomposition(rawJson);
 
@@ -82,6 +87,8 @@ public class GoalServiceImpl implements GoalService {
             for (MilestoneDraft milestoneDraft : result.milestones()) {
                 createMilestoneWithTasks(goal, milestoneDraft);
             }
+
+            memoryService.remember(userId, "so'nggi_maqsad", goal.getTitle(), 5);
         } catch (AiClientException | AiResponseParseException e) {
             log.error("Maqsadni AI orqali bosqichlarga bo'lishda xatolik yuz berdi. goalId={}", goal.getId(), e);
             goal.setDescription(rawDescription + "\n\n" + AI_DECOMPOSITION_FAILURE_MARKER);

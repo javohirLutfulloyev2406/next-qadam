@@ -65,4 +65,14 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * Snooze muddati o'tgan Task'larni qayta PENDING'ga o'tkazish uchun (NudgeService.requeueDueSnoozedTasks).
      */
     List<Task> findAllByStatusAndSnoozedUntilBefore(Task.Status status, Instant snoozedUntil);
+
+    long countByStatusAndUpdatedAtBetween(Task.Status status, Instant from, Instant to);
+
+    /**
+     * Admin statistikasidagi "bugun faol" hisobiga qo'shiladigan — bugun kamida bitta Task'ni
+     * bajargan (DONE holatiga o'tkazgan) foydalanuvchilarning distinct ID ro'yxati.
+     */
+    @Query("SELECT DISTINCT t.goal.user.id FROM Task t WHERE t.status = :status AND t.updatedAt >= :from AND t.updatedAt < :to")
+    List<UUID> findDistinctUserIdsByStatusAndUpdatedAtBetween(@Param("status") Task.Status status,
+                                                               @Param("from") Instant from, @Param("to") Instant to);
 }

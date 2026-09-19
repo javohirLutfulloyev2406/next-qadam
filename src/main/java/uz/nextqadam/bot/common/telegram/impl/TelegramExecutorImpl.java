@@ -46,6 +46,22 @@ public class TelegramExecutorImpl implements TelegramExecutor {
     }
 
     @Override
+    public boolean sendMessageForBroadcast(Long chatId, String text) {
+        SendMessage message = SendMessage.builder()
+                .chatId(String.valueOf(chatId))
+                .text(text)
+                .parseMode(PARSE_MODE_HTML)
+                .build();
+        try {
+            telegramBotFacade.execute(message);
+            return true;
+        } catch (TelegramApiException e) {
+            log.warn("Broadcast xabari yetkazilmadi (bot bloklangan yoki boshqa xato): chatId={}", chatId, e);
+            return false;
+        }
+    }
+
+    @Override
     public void sendMessageWithKeyboard(Long chatId, String text, InlineKeyboardMarkup keyboard) {
         SendMessage message = SendMessage.builder()
                 .chatId(String.valueOf(chatId))

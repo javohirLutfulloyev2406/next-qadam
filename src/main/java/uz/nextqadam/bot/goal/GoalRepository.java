@@ -16,4 +16,6 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
      * Foydalanuvchining eng so'nggi yaratilgan faol Goal'i — Goal Drift Detection uchun.
      */
     Optional<Goal> findFirstByUserIdAndStatusOrderByCreatedAtDesc(UUID userId, Goal.Status status);
+
+    long countByStatus(Goal.Status status);
 }

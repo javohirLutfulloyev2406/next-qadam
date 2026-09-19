@@ -51,6 +51,18 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildGuideLinkKeyboard();
 
     /**
+     * /admin panelining asosiy menyusi — faqat AdminHandler orqali, isAdmin tekshiruvidan o'tgan
+     * chaqiruvchilarga ko'rsatiladi.
+     */
+    InlineKeyboardMarkup buildAdminMenuKeyboard();
+
+    /**
+     * Admin broadcast oqimidagi ikkinchi bosqich — "✅ Ha, yubor" (ADMIN_BROADCAST_CONFIRM) va
+     * "❌ Bekor qilish" (ADMIN_BROADCAST_CANCEL) tugmalari.
+     */
+    InlineKeyboardMarkup buildAdminBroadcastConfirmKeyboard();
+
+    /**
      * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
      * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
      * (callbackData "CHECKIN_CONFIRM").

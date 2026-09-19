@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
@@ -180,7 +181,7 @@ public class KeyboardServiceImpl implements KeyboardService {
     @Override
     public InlineKeyboardMarkup buildGuideLinkKeyboard() {
         return InlineKeyboardMarkup.builder()
-                .keyboard(List.of(List.of(urlButton("📖 To'liq qo'llanma", GUIDE_URL))))
+                .keyboard(List.of(List.of(webAppButton("📖 To'liq qo'llanma", GUIDE_URL))))
                 .build();
     }
 
@@ -188,8 +189,8 @@ public class KeyboardServiceImpl implements KeyboardService {
         return InlineKeyboardButton.builder().text(label).callbackData(callbackData).build();
     }
 
-    private InlineKeyboardButton urlButton(String label, String url) {
-        return InlineKeyboardButton.builder().text(label).url(url).build();
+    private InlineKeyboardButton webAppButton(String label, String url) {
+        return InlineKeyboardButton.builder().text(label).webApp(new WebAppInfo(url)).build();
     }
 
     private String truncate(String text, int maxLength) {

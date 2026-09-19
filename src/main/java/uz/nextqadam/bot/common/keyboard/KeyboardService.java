@@ -44,8 +44,9 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildGoalDriftKeyboard();
 
     /**
-     * /help va onboarding oxiridagi to'liq qo'llanma havolasi — callbackData emas, to'g'ridan-to'g'ri
-     * URL turidagi tugma (bosilganda Telegram brauzerda/ichki ko'rinishda ochadi, botga qaytmaydi).
+     * /help va onboarding oxiridagi to'liq qo'llanma havolasi — callbackData yoki oddiy url emas, Web App
+     * turidagi tugma (bosilganda sahifa Telegram ichida, native ko'rinishda ochiladi — tashqi brauzerga
+     * chiqmaydi).
      */
     InlineKeyboardMarkup buildGuideLinkKeyboard();
 

@@ -20,6 +20,8 @@ telegram:
     token: ${TELEGRAM_BOT_TOKEN}
     username: ${TELEGRAM_BOT_USERNAME}
     admin-group-id: ${TELEGRAM_ADMIN_GROUP_ID:0}
+  admin:
+    ids: ${ADMIN_TELEGRAM_IDS:}
 
 ai:
   client:

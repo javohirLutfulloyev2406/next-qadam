@@ -185,6 +185,26 @@ public class KeyboardServiceImpl implements KeyboardService {
                 .build();
     }
 
+    @Override
+    public InlineKeyboardMarkup buildAdminMenuKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(
+                List.of(button("📊 Statistika", "ADMIN_STATS"), button("📢 Xabar yuborish", "ADMIN_BROADCAST_START")),
+                List.of(button("🔍 Foydalanuvchi qidirish", "ADMIN_SEARCH_START"),
+                        button("⚠️ So'nggi xatolar", "ADMIN_ERRORS")),
+                List.of(button("🔄 Yangilash", "ADMIN_REFRESH"))
+        );
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildAdminBroadcastConfirmKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(List.of(
+                button("✅ Ha, yubor", "ADMIN_BROADCAST_CONFIRM"),
+                button("❌ Bekor qilish", "ADMIN_BROADCAST_CANCEL")
+        ));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
     private InlineKeyboardButton button(String label, String callbackData) {
         return InlineKeyboardButton.builder().text(label).callbackData(callbackData).build();
     }

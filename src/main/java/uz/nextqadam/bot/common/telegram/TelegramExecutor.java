@@ -7,6 +7,13 @@ public interface TelegramExecutor {
 
     void sendMessage(Long chatId, String text);
 
+    /**
+     * sendMessage'dan farqli o'laroq, TelegramApiException'ni yutib qo'ymaydi — muvaffaqiyat/
+     * muvaffaqiyatsizlikni boolean orqali qaytaradi. Admin broadcast'ida botni bloklagan
+     * foydalanuvchilarni sanash uchun kerak.
+     */
+    boolean sendMessageForBroadcast(Long chatId, String text);
+
     void sendMessageWithKeyboard(Long chatId, String text, InlineKeyboardMarkup keyboard);
 
     void sendMessageWithReplyKeyboard(Long chatId, String text, ReplyKeyboardMarkup keyboard);

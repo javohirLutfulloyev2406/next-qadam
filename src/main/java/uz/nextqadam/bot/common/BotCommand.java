@@ -24,7 +24,10 @@ public enum BotCommand {
     // Dasturchi uchun "yashirin" komandalar — asosiy menyuga va setMyCommands ro'yxatiga QO'SHILMAYDI.
     TEST_RETRO("/testretro", "Haftalik retrospektivani darhol sinash"),
     TEST_DRIFT("/testdrift", "Goal drift tekshiruvini darhol sinash"),
-    TEST_NUDGE("/testnudge", "Kunlik ustuvorlik nudge'ini darhol sinash");
+    TEST_NUDGE("/testnudge", "Kunlik ustuvorlik nudge'ini darhol sinash"),
+    // Faqat administrator uchun — description ataylab null, chunki setMyCommands ro'yxatiga
+    // QO'SHILMAYDI (Telegram'ning "/" menyusida ko'rinmasligi kerak).
+    ADMIN("/admin", null);
 
     // Doimiy tugmalar panelidagi (ReplyKeyboard) matnlarni tegishli komandaga bog'lash uchun.
     private static final Map<String, BotCommand> BUTTON_LABEL_TO_COMMAND = Map.of(

@@ -43,15 +43,30 @@ public class AiClientImpl implements AiClient {
 
     @Override
     public String complete(String systemPrompt, String userPrompt) {
+        return callGemini(systemPrompt, userPrompt, true);
+    }
+
+    @Override
+    public String completeText(String systemPrompt, String userPrompt) {
+        return callGemini(systemPrompt, userPrompt, false);
+    }
+
+    private String callGemini(String systemPrompt, String userPrompt, boolean jsonMode) {
         String logId = UUID.randomUUID().toString();
+
+        Map<String, Object> generationConfig = jsonMode
+                ? Map.of(
+                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
+                        "temperature", TEMPERATURE,
+                        "response_mime_type", "application/json")
+                : Map.of(
+                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
+                        "temperature", TEMPERATURE);
+
         Map<String, Object> requestBody = Map.of(
                 "system_instruction", Map.of("parts", List.of(Map.of("text", systemPrompt))),
                 "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", userPrompt)))),
-                "generationConfig", Map.of(
-                        "maxOutputTokens", MAX_OUTPUT_TOKENS,
-                        "temperature", TEMPERATURE,
-                        "response_mime_type", "application/json"
-                )
+                "generationConfig", generationConfig
         );
 
         try {

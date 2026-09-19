@@ -12,9 +12,12 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import uz.nextqadam.bot.common.BotCommand;
 import uz.nextqadam.bot.common.errorlog.ErrorNotificationService;
+import uz.nextqadam.bot.companion.CompanionHandler;
 import uz.nextqadam.bot.goal.GoalHandler;
 import uz.nextqadam.bot.memory.MemoryHandler;
+import uz.nextqadam.bot.nudge.NudgeHandler;
 import uz.nextqadam.bot.plan.PlanHandler;
+import uz.nextqadam.bot.track.TrackHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
 import uz.nextqadam.bot.user.ProfileHandler;
 
@@ -28,16 +31,23 @@ public class UpdateDispatcher {
     private final ProfileHandler profileHandler;
     private final MemoryHandler memoryHandler;
     private final PlanHandler planHandler;
+    private final CompanionHandler companionHandler;
+    private final TrackHandler trackHandler;
+    private final NudgeHandler nudgeHandler;
     private final ErrorNotificationService errorNotificationService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
+                             CompanionHandler companionHandler, TrackHandler trackHandler, NudgeHandler nudgeHandler,
                              ErrorNotificationService errorNotificationService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
         this.memoryHandler = memoryHandler;
         this.planHandler = planHandler;
+        this.companionHandler = companionHandler;
+        this.trackHandler = trackHandler;
+        this.nudgeHandler = nudgeHandler;
         this.errorNotificationService = errorNotificationService;
     }
 
@@ -75,6 +85,12 @@ public class UpdateDispatcher {
                 case PLAN_DAY -> planHandler.handlePlanDayCommand(update);
                 case BRAIN_DUMP -> planHandler.handleBrainDumpCommand(update);
                 case IDEAS -> planHandler.handleIdeasCommand(update);
+                case MOTIVATE -> companionHandler.handleMotivateCommand(update);
+                case SOS -> companionHandler.handleSosCommand(update);
+                case EVENING_CHECKIN -> trackHandler.handleEveningCheckinCommand(update);
+                case TEST_RETRO -> trackHandler.handleTestRetroCommand(update);
+                case TEST_DRIFT -> trackHandler.handleTestDriftCommand(update);
+                case TEST_NUDGE -> nudgeHandler.handleTestNudgeCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;
@@ -107,7 +123,14 @@ public class UpdateDispatcher {
             return;
         }
 
-        log.info("[{}] TODO: keyingi modulga ulanadi. matn qabul qilindi, chatId={}", logId, chatId);
+        if (trackHandler.isAwaitingEveningCheckinText(chatId)) {
+            trackHandler.handleEveningCheckinText(update);
+            return;
+        }
+
+        // Yakuniy fallback: yuqoridagi hech qanday komanda yoki AWAITING_* holatiga mos kelmagan matn —
+        // demak bu erkin suhbat. CompanionHandler AI orqali kontekstli javob beradi.
+        companionHandler.handleFreeChat(update);
     }
 
     private void dispatchCallbackQuery(Update update, String logId) {
@@ -179,6 +202,11 @@ public class UpdateDispatcher {
             return;
         }
 
+        if (nudgeHandler.isTaskSnoozeCallback(data)) {
+            nudgeHandler.handleSnoozeCallback(update);
+            return;
+        }
+
         if (goalHandler.isGoalsNextStepCallback(data)) {
             goalHandler.handleGoalsNextStepCallback(update);
             return;
@@ -191,6 +219,16 @@ public class UpdateDispatcher {
 
         if (planHandler.isCheckinConfirmCallback(data)) {
             planHandler.handleCheckinConfirm(update);
+            return;
+        }
+
+        if (trackHandler.isDriftUpdateGoalCallback(data)) {
+            trackHandler.handleDriftUpdateGoalCallback(update);
+            return;
+        }
+
+        if (trackHandler.isDriftDismissCallback(data)) {
+            trackHandler.handleDriftDismissCallback(update);
             return;
         }
 

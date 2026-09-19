@@ -55,6 +55,13 @@ public class Task extends BaseEntity {
     @Column(name = "is_today_priority", nullable = false)
     private boolean isTodayPriority = false;
 
+    @Builder.Default
+    @Column(name = "consecutive_snooze_count", nullable = false)
+    private int consecutiveSnoozeCount = 0;
+
+    @Column(name = "snoozed_until")
+    private Instant snoozedUntil;
+
     public enum Status {
         PENDING,
         DONE,

@@ -65,10 +65,19 @@ public class GoalHandler {
 
     public void handleNewGoalCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
-        stageByChatId.put(chatId, GoalStage.AWAITING_GOAL_DESCRIPTION);
+        beginGoalDescriptionFlow(chatId);
         telegramExecutor.sendMessage(chatId,
                 "Katta maqsadingizni bir necha jumla bilan yozing "
                         + "(masalan: \"6 oyda backend developer bo'lmoqchiman\")");
+    }
+
+    /**
+     * /newgoal bosilgandek AWAITING_GOAL_DESCRIPTION holatini o'rnatadi — boshqa modullar (masalan
+     * Goal Drift Detection ogohlantirishidagi "Maqsadni yangilash" tugmasi) foydalanuvchini xabar
+     * matnini o'zgartirmasdan shu oqimga yo'naltirishi uchun.
+     */
+    public void beginGoalDescriptionFlow(Long chatId) {
+        stageByChatId.put(chatId, GoalStage.AWAITING_GOAL_DESCRIPTION);
     }
 
     public void handleGoalDescription(Update update) {
@@ -204,7 +213,11 @@ public class GoalHandler {
         );
     }
 
-    private String buildTaskCardMessage(Task task) {
+    /**
+     * NudgeHandler kabi boshqa modullar ham (masalan adaptive-shrink'dan keyin qayta ko'rsatishda)
+     * bir xil kartochka ko'rinishidan foydalanishi uchun public.
+     */
+    public String buildTaskCardMessage(Task task) {
         StringBuilder sb = new StringBuilder();
         sb.append("📌 <b>Bugungi qadamingiz</b>\n\n");
         sb.append(task.getTitle()).append("\n");

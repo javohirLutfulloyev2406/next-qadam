@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -114,6 +115,19 @@ public class TelegramExecutorImpl implements TelegramExecutor {
             telegramBotFacade.execute(answer);
         } catch (TelegramApiException e) {
             log.error("Callback query'ga javob berishda xatolik: callbackQueryId={}", callbackQueryId, e);
+        }
+    }
+
+    @Override
+    public void sendChatAction(Long chatId, String action) {
+        SendChatAction chatAction = SendChatAction.builder()
+                .chatId(String.valueOf(chatId))
+                .action(action)
+                .build();
+        try {
+            telegramBotFacade.execute(chatAction);
+        } catch (TelegramApiException e) {
+            log.error("Chat action yuborishda xatolik: chatId={}, action={}", chatId, action, e);
         }
     }
 }

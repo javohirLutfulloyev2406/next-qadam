@@ -19,7 +19,12 @@ public enum BotCommand {
     GOALS("/goals", "Faol maqsadlarni ko'rish"),
     PLAN_DAY("/planday", "Bugungi ustuvor vazifalarni belgilash"),
     BRAIN_DUMP("/braindump", "Fikrlarni tez yozib tashlash"),
-    IDEAS("/ideas", "Saqlangan g'oyalarni ko'rish");
+    IDEAS("/ideas", "Saqlangan g'oyalarni ko'rish"),
+    EVENING_CHECKIN("/kunim", "Kechki hisobot berish"),
+    // Dasturchi uchun "yashirin" komandalar — asosiy menyuga va setMyCommands ro'yxatiga QO'SHILMAYDI.
+    TEST_RETRO("/testretro", "Haftalik retrospektivani darhol sinash"),
+    TEST_DRIFT("/testdrift", "Goal drift tekshiruvini darhol sinash"),
+    TEST_NUDGE("/testnudge", "Kunlik ustuvorlik nudge'ini darhol sinash");
 
     // Doimiy tugmalar panelidagi (ReplyKeyboard) matnlarni tegishli komandaga bog'lash uchun.
     private static final Map<String, BotCommand> BUTTON_LABEL_TO_COMMAND = Map.of(
@@ -28,7 +33,10 @@ public enum BotCommand {
             "✅ Bajardim", DONE,
             "👤 Profil", PROFILE,
             "🌅 Kun rejasi", PLAN_DAY,
-            "🧠 Fikr tashla", BRAIN_DUMP
+            "🧠 Fikr tashla", BRAIN_DUMP,
+            "🔥 Motivatsiya", MOTIVATE,
+            "🆘 Yordam kerak", SOS,
+            "🌙 Kunni yakunlash", EVENING_CHECKIN
     );
 
     private final String command;

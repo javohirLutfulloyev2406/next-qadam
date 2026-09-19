@@ -75,10 +75,19 @@ public class KeyboardServiceImpl implements KeyboardService {
         row3.add("🌅 Kun rejasi");
         row3.add("🧠 Fikr tashla");
 
+        KeyboardRow row4 = new KeyboardRow();
+        row4.add("🔥 Motivatsiya");
+        row4.add("🆘 Yordam kerak");
+
+        KeyboardRow row5 = new KeyboardRow();
+        row5.add("🌙 Kunni yakunlash");
+
         return ReplyKeyboardMarkup.builder()
                 .keyboardRow(row1)
                 .keyboardRow(row2)
                 .keyboardRow(row3)
+                .keyboardRow(row4)
+                .keyboardRow(row5)
                 .resizeKeyboard(true)
                 .build();
     }
@@ -128,7 +137,10 @@ public class KeyboardServiceImpl implements KeyboardService {
     @Override
     public InlineKeyboardMarkup buildTaskActionKeyboard(UUID taskId) {
         return InlineKeyboardMarkup.builder()
-                .keyboard(List.of(List.of(button("✅ Bajardim", "TASK_DONE_" + taskId))))
+                .keyboard(List.of(List.of(
+                        button("✅ Bajardim", "TASK_DONE_" + taskId),
+                        button("⏰ Keyinroq", "TASK_SNOOZE_" + taskId)
+                )))
                 .build();
     }
 
@@ -152,6 +164,15 @@ public class KeyboardServiceImpl implements KeyboardService {
             }
         }
         rows.add(List.of(button("✅ Tasdiqlash (" + selectedCount + "/" + MAX_TODAY_PRIORITIES + ")", "CHECKIN_CONFIRM")));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildGoalDriftKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(List.of(
+                button("🔄 Maqsadni yangilash", "DRIFT_UPDATE_GOAL"),
+                button("Yo'q, davom etaman", "DRIFT_DISMISS")
+        ));
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 

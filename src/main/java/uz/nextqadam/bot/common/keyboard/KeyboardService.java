@@ -38,6 +38,12 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildGoalsNextStepKeyboard(UUID goalId);
 
     /**
+     * Goal Drift Detection ogohlantirishidagi 2 tugma: "🔄 Maqsadni yangilash" (DRIFT_UPDATE_GOAL) va
+     * "Yo'q, davom etaman" (DRIFT_DISMISS).
+     */
+    InlineKeyboardMarkup buildGoalDriftKeyboard();
+
+    /**
      * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
      * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
      * (callbackData "CHECKIN_CONFIRM").

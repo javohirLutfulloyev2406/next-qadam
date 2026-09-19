@@ -4,9 +4,13 @@ import java.util.UUID;
 
 public interface CompanionService {
 
-    String respondToMessage(UUID userId, String message);
+    String generateFreeChatReply(UUID userId, String userMessage);
 
-    String motivate(UUID userId);
+    String generateMotivation(UUID userId);
 
-    String handleSos(UUID userId);
+    /**
+     * Joriy Task'ni 5 daqiqalik mikro-qadamga qisqartiradi. Foydalanuvchining hech qanday faol Task'i
+     * bo'lmasa, {@code null} qaytaradi — bu holatni chaqiruvchi (CompanionHandler) alohida ishlov beradi.
+     */
+    String generateSosMicroStep(UUID userId);
 }

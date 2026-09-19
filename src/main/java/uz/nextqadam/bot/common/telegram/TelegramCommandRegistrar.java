@@ -17,8 +17,8 @@ public class TelegramCommandRegistrar {
     private static final Logger log = LoggerFactory.getLogger(TelegramCommandRegistrar.class);
 
     // Hozircha faqat UpdateDispatcher'da real handler'ga ulangan komandalar ro'yxatga olinadi —
-    // help/motivate/sos hali TODO, ular ro'yxatga qo'shilsa foydalanuvchi ularni "/" menyusida
-    // ko'rib bosadi, lekin botdan hozircha hech qanday javob kelmaydi.
+    // help hali TODO, ro'yxatga qo'shilsa foydalanuvchi uni "/" menyusida ko'rib bosadi, lekin
+    // botdan hozircha hech qanday javob kelmaydi.
     private static final List<uz.nextqadam.bot.common.BotCommand> REGISTERED_COMMANDS = List.of(
             uz.nextqadam.bot.common.BotCommand.START,
             uz.nextqadam.bot.common.BotCommand.NEW_GOAL,
@@ -30,7 +30,12 @@ public class TelegramCommandRegistrar {
             uz.nextqadam.bot.common.BotCommand.FORGET,
             uz.nextqadam.bot.common.BotCommand.PLAN_DAY,
             uz.nextqadam.bot.common.BotCommand.BRAIN_DUMP,
-            uz.nextqadam.bot.common.BotCommand.IDEAS
+            uz.nextqadam.bot.common.BotCommand.IDEAS,
+            uz.nextqadam.bot.common.BotCommand.MOTIVATE,
+            uz.nextqadam.bot.common.BotCommand.SOS,
+            uz.nextqadam.bot.common.BotCommand.EVENING_CHECKIN
+            // TEST_RETRO, TEST_DRIFT va TEST_NUDGE ataylab qo'shilmagan — bular faqat dasturchi uchun
+            // "yashirin" komandalar, foydalanuvchiga "/" menyusida ko'rinmasligi kerak.
     );
 
     private final TelegramBotFacade telegramBotFacade;

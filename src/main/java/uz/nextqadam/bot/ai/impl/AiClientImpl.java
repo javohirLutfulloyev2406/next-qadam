@@ -26,6 +26,11 @@ public class AiClientImpl implements AiClient {
     private static final Logger log = LoggerFactory.getLogger(AiClientImpl.class);
     private static final int MAX_OUTPUT_TOKENS = 4096;
     private static final double TEMPERATURE = 0.7;
+    // gemini-3.x flash modellari "thinking" (fikrlash) rejimida ishlaydi — ko'rinmas fikrlash tokenlari
+    // ham maxOutputTokens byudjetidan hisoblanadi, shu sababli oddiy so'rovlarda ko'rinadigan matn
+    // chiqmasdan javob kesilib qolishi mumkin edi. Bizning barcha holatlarimiz (JSON ajratish, qisqa
+    // suhbat javobi) uzoq fikrlashni talab qilmaydi, shuning uchun thinkingBudget=0 bilan o'chiramiz.
+    private static final int THINKING_BUDGET = 0;
     private static final Set<String> NON_BLOCKING_FINISH_REASONS = Set.of("STOP", "MAX_TOKENS", "");
 
     // Spring Boot 4'ning WebClient auto-configuratsiyasi Jackson 3 (tools.jackson) asosida ishlaydi,
@@ -58,10 +63,12 @@ public class AiClientImpl implements AiClient {
                 ? Map.of(
                         "maxOutputTokens", MAX_OUTPUT_TOKENS,
                         "temperature", TEMPERATURE,
-                        "response_mime_type", "application/json")
+                        "response_mime_type", "application/json",
+                        "thinkingConfig", Map.of("thinkingBudget", THINKING_BUDGET))
                 : Map.of(
                         "maxOutputTokens", MAX_OUTPUT_TOKENS,
-                        "temperature", TEMPERATURE);
+                        "temperature", TEMPERATURE,
+                        "thinkingConfig", Map.of("thinkingBudget", THINKING_BUDGET));
 
         Map<String, Object> requestBody = Map.of(
                 "system_instruction", Map.of("parts", List.of(Map.of("text", systemPrompt))),

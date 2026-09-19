@@ -17,7 +17,7 @@ public class AiClientConfig {
     private static final String GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
     private String apiKey;
-    private String model = "gemini-3.6-flash";
+    private String model = "gemini-3.5-flash";
     private int timeoutSeconds = 20;
 
     @Bean

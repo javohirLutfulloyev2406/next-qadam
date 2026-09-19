@@ -28,7 +28,7 @@ public class KeyboardServiceImpl implements KeyboardService {
     private static final int MEMORY_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int CHECKIN_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int MAX_TODAY_PRIORITIES = 3;
-    private static final String GUIDE_URL = "https://claude.ai/artifact/F8jBX7FVRVGndfTVafaLxv";
+    private static final String GUIDE_URL = "https://tinyurl.com/czed3pm4";
 
     @Override
     public InlineKeyboardMarkup createInlineKeyboard(List<String> labels, List<String> callbackData, int columns) {

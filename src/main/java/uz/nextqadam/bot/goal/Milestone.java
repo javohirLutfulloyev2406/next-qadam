@@ -1,5 +1,7 @@
 package uz.nextqadam.bot.goal;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -18,6 +20,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "milestones")
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

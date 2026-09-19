@@ -47,6 +47,25 @@ public class OnboardingHandler {
         return callbackData != null && callbackData.startsWith(TONE_CALLBACK_PREFIX);
     }
 
+    /**
+     * ResetHandler.softReset oqimidan keyin chaqiriladi — foydalanuvchini xuddi /start birinchi
+     * marta bosilgandek qaytadan ism so'rash bosqichiga qaytaradi. handleStart'dagi yangi
+     * foydalanuvchi oqimidan farqi shu — User qatorining o'zi allaqachon mavjud (faqat bo'shatilgan),
+     * shu sababli handleName endi createUser emas, updateName chaqiradi.
+     */
+    public void restartOnboarding(Long chatId) {
+        stageByChatId.put(chatId, OnboardingStage.AWAITING_NAME);
+        telegramExecutor.sendMessage(chatId, "✅ Tayyor — hammasi tozalandi. Qaytadan tanishaylik. Ismingiz nima?");
+    }
+
+    /**
+     * StateCleanupService orqali chaqiriladi — masalan ResetHandler.hardDelete'dan keyin, shu
+     * chatId uchun qolib ketishi mumkin bo'lgan eski AWAITING_* holatni tozalash uchun.
+     */
+    public void clearState(Long chatId) {
+        stageByChatId.remove(chatId);
+    }
+
     public void handleStart(Update update) {
         Message message = update.getMessage();
         Long chatId = message.getChatId();
@@ -73,7 +92,13 @@ public class OnboardingHandler {
         Long chatId = message.getChatId();
         String name = message.getText().trim();
 
-        userService.createUser(chatId, name);
+        // softReset'dan keyingi qayta-onboarding oqimida User qatori allaqachon mavjud (faqat
+        // bo'shatilgan) — bunday holatda createUser telegramId unique cheklovini buzadi, shu sababli
+        // mavjud bo'lsa yangilaymiz, bo'lmasa (haqiqiy birinchi /start) yangi qator yaratamiz.
+        userService.findByTelegramId(chatId).ifPresentOrElse(
+                existingUser -> userService.updateName(existingUser.getId(), name),
+                () -> userService.createUser(chatId, name)
+        );
         stageByChatId.put(chatId, OnboardingStage.AWAITING_TONE);
 
         telegramExecutor.sendMessageWithKeyboard(chatId,

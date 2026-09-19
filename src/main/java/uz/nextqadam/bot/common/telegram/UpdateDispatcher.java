@@ -22,6 +22,7 @@ import uz.nextqadam.bot.plan.PlanHandler;
 import uz.nextqadam.bot.track.TrackHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
 import uz.nextqadam.bot.user.ProfileHandler;
+import uz.nextqadam.bot.user.ResetHandler;
 
 @Component
 public class UpdateDispatcher {
@@ -39,12 +40,13 @@ public class UpdateDispatcher {
     private final ErrorNotificationService errorNotificationService;
     private final AdminHandler adminHandler;
     private final AdminAuthService adminAuthService;
+    private final ResetHandler resetHandler;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
                              CompanionHandler companionHandler, TrackHandler trackHandler, NudgeHandler nudgeHandler,
                              ErrorNotificationService errorNotificationService, AdminHandler adminHandler,
-                             AdminAuthService adminAuthService) {
+                             AdminAuthService adminAuthService, ResetHandler resetHandler) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
@@ -56,6 +58,7 @@ public class UpdateDispatcher {
         this.errorNotificationService = errorNotificationService;
         this.adminHandler = adminHandler;
         this.adminAuthService = adminAuthService;
+        this.resetHandler = resetHandler;
     }
 
     public void dispatch(Update update) {
@@ -96,6 +99,7 @@ public class UpdateDispatcher {
                 case MOTIVATE -> companionHandler.handleMotivateCommand(update);
                 case SOS -> companionHandler.handleSosCommand(update);
                 case EVENING_CHECKIN -> trackHandler.handleEveningCheckinCommand(update);
+                case RESET_ACCOUNT -> resetHandler.handleResetCommand(update);
                 case TEST_RETRO -> trackHandler.handleTestRetroCommand(update);
                 case TEST_DRIFT -> trackHandler.handleTestDriftCommand(update);
                 case TEST_NUDGE -> nudgeHandler.handleTestNudgeCommand(update);
@@ -229,6 +233,36 @@ public class UpdateDispatcher {
 
         if (profileHandler.isProfileToneCallback(data)) {
             profileHandler.handleToneCallback(update);
+            return;
+        }
+
+        if (resetHandler.isProfileResetEntryCallback(data)) {
+            resetHandler.handleResetCommand(update);
+            return;
+        }
+
+        if (resetHandler.isSoftAskCallback(data)) {
+            resetHandler.handleSoftResetAskCallback(update);
+            return;
+        }
+
+        if (resetHandler.isSoftConfirmCallback(data)) {
+            resetHandler.handleSoftResetConfirmCallback(update);
+            return;
+        }
+
+        if (resetHandler.isHardAskCallback(data)) {
+            resetHandler.handleHardDeleteAskCallback(update);
+            return;
+        }
+
+        if (resetHandler.isHardConfirmCallback(data)) {
+            resetHandler.handleHardDeleteConfirmCallback(update);
+            return;
+        }
+
+        if (resetHandler.isCancelCallback(data)) {
+            resetHandler.handleResetCancelCallback(update);
             return;
         }
 

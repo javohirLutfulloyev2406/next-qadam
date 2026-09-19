@@ -63,6 +63,24 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildAdminBroadcastConfirmKeyboard();
 
     /**
+     * /reset boshlang'ich tanlovi — "🔄 Yangidan boshlash" (RESET_SOFT_ASK) va "🗑 Butunlay
+     * o'chirish" (RESET_HARD_ASK), har biri alohida qatorda.
+     */
+    InlineKeyboardMarkup buildResetChoiceKeyboard();
+
+    /**
+     * "Yangidan boshlash" oqimining yakuniy tasdiqlash bosqichi — "✅ Ha, boshlaymiz"
+     * (RESET_SOFT_CONFIRM) va "❌ Bekor qilish" (RESET_CANCEL).
+     */
+    InlineKeyboardMarkup buildResetSoftConfirmKeyboard();
+
+    /**
+     * "Butunlay o'chirish" oqimining yakuniy tasdiqlash bosqichi — "✅ Ha, butunlay o'chir"
+     * (RESET_HARD_CONFIRM) va "❌ Bekor qilish" (RESET_CANCEL).
+     */
+    InlineKeyboardMarkup buildResetHardConfirmKeyboard();
+
+    /**
      * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
      * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
      * (callbackData "CHECKIN_CONFIRM").

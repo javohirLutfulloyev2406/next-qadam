@@ -55,6 +55,14 @@ public class GoalHandler {
         return stageByChatId.get(chatId) == GoalStage.AWAITING_GOAL_DESCRIPTION;
     }
 
+    /**
+     * StateCleanupService orqali chaqiriladi (masalan ResetHandler'dan keyin) — shu chatId uchun
+     * qolib ketgan AWAITING_GOAL_DESCRIPTION holatini tozalaydi.
+     */
+    public void clearState(Long chatId) {
+        stageByChatId.remove(chatId);
+    }
+
     public boolean isTaskDoneCallback(String callbackData) {
         return callbackData != null && callbackData.startsWith(TASK_DONE_CALLBACK_PREFIX);
     }

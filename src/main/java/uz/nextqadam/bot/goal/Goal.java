@@ -2,6 +2,8 @@ package uz.nextqadam.bot.goal;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 import uz.nextqadam.bot.user.User;
 
@@ -21,6 +23,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "goals")
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -111,7 +111,8 @@ public class KeyboardServiceImpl implements KeyboardService {
                 List.of(button("✏️ Ismni o'zgartirish", "PROFILE_EDIT_NAME"),
                         button("🎭 Uslubni o'zgartirish", "PROFILE_EDIT_TONE")),
                 List.of(button("🌍 Vaqt zonasi", "PROFILE_EDIT_TIMEZONE"),
-                        button("🧠 Xotiram", "MEMORY_VIEW"))
+                        button("🧠 Xotiram", "MEMORY_VIEW")),
+                List.of(button("🔄 Hisobni tozalash", "PROFILE_RESET_ENTRY"))
         );
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
@@ -201,6 +202,33 @@ public class KeyboardServiceImpl implements KeyboardService {
         List<List<InlineKeyboardButton>> rows = List.of(List.of(
                 button("✅ Ha, yubor", "ADMIN_BROADCAST_CONFIRM"),
                 button("❌ Bekor qilish", "ADMIN_BROADCAST_CANCEL")
+        ));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildResetChoiceKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(
+                List.of(button("🔄 Yangidan boshlash", "RESET_SOFT_ASK")),
+                List.of(button("🗑 Butunlay o'chirish", "RESET_HARD_ASK"))
+        );
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildResetSoftConfirmKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(List.of(
+                button("✅ Ha, boshlaymiz", "RESET_SOFT_CONFIRM"),
+                button("❌ Bekor qilish", "RESET_CANCEL")
+        ));
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    @Override
+    public InlineKeyboardMarkup buildResetHardConfirmKeyboard() {
+        List<List<InlineKeyboardButton>> rows = List.of(List.of(
+                button("✅ Ha, butunlay o'chir", "RESET_HARD_CONFIRM"),
+                button("❌ Bekor qilish", "RESET_CANCEL")
         ));
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }

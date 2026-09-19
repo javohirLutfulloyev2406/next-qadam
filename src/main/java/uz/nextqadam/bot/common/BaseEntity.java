@@ -43,6 +43,15 @@ public abstract class BaseEntity {
     @Column(name = "version", nullable = false)
     private Long version;
 
+    /**
+     * Deyarli barcha domain entity'larda (User'dan tashqari) @SQLRestriction("deleted = false")
+     * bor — shu sababli oddiy so'rovlar bu maydon true bo'lgan qatorlarni avtomatik chetlab o'tadi.
+     * Agar ANIQ shu qatorlarni (masalan admin panelida "o'chirilganlar" statistikasi uchun) ko'rish
+     * kerak bo'lsa, @SQLRestriction'ni HQL/JPQL orqali chetlab o'tib bo'lmaydi — buning o'rniga
+     * native SQL so'rov (nativeQuery=true) yozish yoki Hibernate Session'da alohida @Filter
+     * mexanizmini qo'llash kerak bo'ladi (ResetServiceImpl'dagi hardDelete metodlari aynan shu
+     * sababli native query ishlatadi).
+     */
     @Builder.Default
     @Column(name = "deleted", nullable = false)
     private boolean deleted = false;

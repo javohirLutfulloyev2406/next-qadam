@@ -1,6 +1,7 @@
 package uz.nextqadam.bot.memory;
 
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 import uz.nextqadam.bot.common.BaseEntity;
@@ -23,6 +24,7 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "memory_items",
         uniqueConstraints = @UniqueConstraint(name = "uq_memory_item_user_key", columnNames = {"user_id", "key"}))
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

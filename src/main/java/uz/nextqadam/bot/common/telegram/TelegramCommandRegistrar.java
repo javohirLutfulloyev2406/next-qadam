@@ -32,9 +32,11 @@ public class TelegramCommandRegistrar {
             uz.nextqadam.bot.common.BotCommand.IDEAS,
             uz.nextqadam.bot.common.BotCommand.MOTIVATE,
             uz.nextqadam.bot.common.BotCommand.SOS,
-            uz.nextqadam.bot.common.BotCommand.EVENING_CHECKIN
-            // TEST_RETRO, TEST_DRIFT va TEST_NUDGE ataylab qo'shilmagan — bular faqat dasturchi uchun
-            // "yashirin" komandalar, foydalanuvchiga "/" menyusida ko'rinmasligi kerak.
+            uz.nextqadam.bot.common.BotCommand.EVENING_CHECKIN,
+            uz.nextqadam.bot.common.BotCommand.RESET_ACCOUNT
+            // TEST_RETRO, TEST_DRIFT, TEST_NUDGE va ADMIN ataylab qo'shilmagan — bular faqat
+            // dasturchi/administrator uchun "yashirin" komandalar, foydalanuvchiga "/" menyusida
+            // ko'rinmasligi kerak.
     );
 
     private final TelegramBotFacade telegramBotFacade;

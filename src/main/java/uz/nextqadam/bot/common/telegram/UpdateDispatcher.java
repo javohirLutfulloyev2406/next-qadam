@@ -16,6 +16,7 @@ import uz.nextqadam.bot.companion.CompanionHandler;
 import uz.nextqadam.bot.goal.GoalHandler;
 import uz.nextqadam.bot.memory.MemoryHandler;
 import uz.nextqadam.bot.plan.PlanHandler;
+import uz.nextqadam.bot.track.TrackHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
 import uz.nextqadam.bot.user.ProfileHandler;
 
@@ -30,17 +31,20 @@ public class UpdateDispatcher {
     private final MemoryHandler memoryHandler;
     private final PlanHandler planHandler;
     private final CompanionHandler companionHandler;
+    private final TrackHandler trackHandler;
     private final ErrorNotificationService errorNotificationService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
-                             CompanionHandler companionHandler, ErrorNotificationService errorNotificationService) {
+                             CompanionHandler companionHandler, TrackHandler trackHandler,
+                             ErrorNotificationService errorNotificationService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
         this.memoryHandler = memoryHandler;
         this.planHandler = planHandler;
         this.companionHandler = companionHandler;
+        this.trackHandler = trackHandler;
         this.errorNotificationService = errorNotificationService;
     }
 
@@ -80,6 +84,9 @@ public class UpdateDispatcher {
                 case IDEAS -> planHandler.handleIdeasCommand(update);
                 case MOTIVATE -> companionHandler.handleMotivateCommand(update);
                 case SOS -> companionHandler.handleSosCommand(update);
+                case EVENING_CHECKIN -> trackHandler.handleEveningCheckinCommand(update);
+                case TEST_RETRO -> trackHandler.handleTestRetroCommand(update);
+                case TEST_DRIFT -> trackHandler.handleTestDriftCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;
@@ -109,6 +116,11 @@ public class UpdateDispatcher {
 
         if (planHandler.isAwaitingBrainDumpText(chatId)) {
             planHandler.handleBrainDumpText(update);
+            return;
+        }
+
+        if (trackHandler.isAwaitingEveningCheckinText(chatId)) {
+            trackHandler.handleEveningCheckinText(update);
             return;
         }
 
@@ -198,6 +210,16 @@ public class UpdateDispatcher {
 
         if (planHandler.isCheckinConfirmCallback(data)) {
             planHandler.handleCheckinConfirm(update);
+            return;
+        }
+
+        if (trackHandler.isDriftUpdateGoalCallback(data)) {
+            trackHandler.handleDriftUpdateGoalCallback(update);
+            return;
+        }
+
+        if (trackHandler.isDriftDismissCallback(data)) {
+            trackHandler.handleDriftDismissCallback(update);
             return;
         }
 

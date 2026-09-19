@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.HtmlEscaper;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.goal.GoalService;
@@ -42,7 +43,7 @@ public class CompanionHandler {
 
         telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         String motivation = companionService.generateMotivation(user.getId());
-        telegramExecutor.sendMessage(chatId, "🔥 " + escapeHtml(motivation));
+        telegramExecutor.sendMessage(chatId, "🔥 " + HtmlEscaper.escape(motivation));
     }
 
     public void handleSosCommand(Update update) {
@@ -65,7 +66,7 @@ public class CompanionHandler {
 
         String text = "🆘 <b>Yaxshi, sekinroq boramiz.</b>\n\n"
                 + "Faqat shuni qil:\n"
-                + "👉 " + escapeHtml(microStep) + "\n\n"
+                + "👉 " + HtmlEscaper.escape(microStep) + "\n\n"
                 + "Shuning o'zi kifoya. Qolganini keyin o'ylaymiz.";
 
         telegramExecutor.sendMessageWithKeyboard(chatId, text, keyboardService.buildTaskActionKeyboard(currentTask.getId()));
@@ -83,17 +84,6 @@ public class CompanionHandler {
 
         telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         String reply = companionService.generateFreeChatReply(user.getId(), message.getText());
-        telegramExecutor.sendMessage(chatId, escapeHtml(reply));
-    }
-
-    // AI'dan kelgan erkin matn "<", ">", "&" kabi belgilarni o'z ichiga olishi mumkin — sendMessage HTML
-    // parseMode bilan ishlaydi, shu sababli bu belgilarni entity sifatida talqin qilishga urinib,
-    // Telegram butun xabarni rad etishi mumkin ("can't parse entities"). Shu uchun AI matnini har doim
-    // escape qilib yuboramiz.
-    private String escapeHtml(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+        telegramExecutor.sendMessage(chatId, HtmlEscaper.escape(reply));
     }
 }

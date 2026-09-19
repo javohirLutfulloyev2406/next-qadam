@@ -7,6 +7,8 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
@@ -39,4 +41,23 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     Optional<Task> findFirstByGoal_User_IdAndStatusOrderByUpdatedAtDesc(UUID userId, Task.Status status);
 
     long countByGoal_User_IdAndStatus(UUID userId, Task.Status status);
+
+    /**
+     * Kechki check-in uchun "bugungi" Task'lar — muddati bugunga to'g'ri kelgan YOKI ertalabki
+     * check-in orqali ustuvor deb belgilangan, hali PENDING yoki allaqachon DONE bo'lganlar.
+     */
+    @Query("""
+            SELECT t FROM Task t
+            WHERE t.goal.user.id = :userId
+              AND t.status IN :statuses
+              AND (t.isTodayPriority = true OR (t.dueDate >= :dayStart AND t.dueDate < :dayEnd))
+            """)
+    List<Task> findTodaysTasksForCheckin(@Param("userId") UUID userId, @Param("statuses") List<Task.Status> statuses,
+                                          @Param("dayStart") Instant dayStart, @Param("dayEnd") Instant dayEnd);
+
+    /**
+     * Haftalik retrospektiva va Goal Drift Detection uchun — muddati berilgan oraliqqa to'g'ri
+     * keluvchi Task'lar (holatidan qat'i nazar).
+     */
+    List<Task> findByGoal_User_IdAndDueDateBetween(UUID userId, Instant from, Instant to);
 }

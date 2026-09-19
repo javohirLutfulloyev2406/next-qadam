@@ -13,7 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import uz.nextqadam.bot.ai.AiResponseParseException;
 import uz.nextqadam.bot.ai.AiResponseParser;
 import uz.nextqadam.bot.ai.dto.BrainDumpResult;
+import uz.nextqadam.bot.ai.dto.EveningCheckinResult;
 import uz.nextqadam.bot.ai.dto.GoalDecompositionResult;
+import uz.nextqadam.bot.ai.dto.GoalDriftResult;
+import uz.nextqadam.bot.ai.dto.WeeklyRetrospective;
 
 @Component
 public class AiResponseParserImpl implements AiResponseParser {
@@ -33,6 +36,21 @@ public class AiResponseParserImpl implements AiResponseParser {
     @Override
     public BrainDumpResult parseBrainDump(String rawJson) {
         return parse(rawJson, BrainDumpResult.class);
+    }
+
+    @Override
+    public EveningCheckinResult parseEveningCheckin(String rawJson) {
+        return parse(rawJson, EveningCheckinResult.class);
+    }
+
+    @Override
+    public WeeklyRetrospective parseWeeklyRetrospective(String rawJson) {
+        return parse(rawJson, WeeklyRetrospective.class);
+    }
+
+    @Override
+    public GoalDriftResult parseGoalDrift(String rawJson) {
+        return parse(rawJson, GoalDriftResult.class);
     }
 
     private <T> T parse(String rawJson, Class<T> type) {

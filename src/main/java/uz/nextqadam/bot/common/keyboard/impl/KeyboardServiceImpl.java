@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
@@ -27,6 +28,7 @@ public class KeyboardServiceImpl implements KeyboardService {
     private static final int MEMORY_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int CHECKIN_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int MAX_TODAY_PRIORITIES = 3;
+    private static final String GUIDE_URL = "https://claude.ai/artifact/F8jBX7FVRVGndfTVafaLxv";
 
     @Override
     public InlineKeyboardMarkup createInlineKeyboard(List<String> labels, List<String> callbackData, int columns) {
@@ -176,8 +178,19 @@ public class KeyboardServiceImpl implements KeyboardService {
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
+    @Override
+    public InlineKeyboardMarkup buildGuideLinkKeyboard() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(webAppButton("📖 To'liq qo'llanma", GUIDE_URL))))
+                .build();
+    }
+
     private InlineKeyboardButton button(String label, String callbackData) {
         return InlineKeyboardButton.builder().text(label).callbackData(callbackData).build();
+    }
+
+    private InlineKeyboardButton webAppButton(String label, String url) {
+        return InlineKeyboardButton.builder().text(label).webApp(new WebAppInfo(url)).build();
     }
 
     private String truncate(String text, int maxLength) {

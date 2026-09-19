@@ -44,6 +44,13 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildGoalDriftKeyboard();
 
     /**
+     * /help va onboarding oxiridagi to'liq qo'llanma havolasi — callbackData yoki oddiy url emas, Web App
+     * turidagi tugma (bosilganda sahifa Telegram ichida, native ko'rinishda ochiladi — tashqi brauzerga
+     * chiqmaydi).
+     */
+    InlineKeyboardMarkup buildGuideLinkKeyboard();
+
+    /**
      * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
      * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
      * (callbackData "CHECKIN_CONFIRM").

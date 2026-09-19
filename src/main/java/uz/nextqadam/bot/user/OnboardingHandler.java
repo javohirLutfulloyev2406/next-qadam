@@ -98,6 +98,10 @@ public class OnboardingHandler {
             telegramExecutor.sendMessageWithReplyKeyboard(chatId,
                     messageTemplateService.welcomeAfterTone(tone, user.getName()),
                     keyboardService.buildMainMenuKeyboard());
+            telegramExecutor.sendMessageWithKeyboard(chatId,
+                    "📖 Aytgancha, botdan to'liq foydalanish uchun qisqa qo'llanma tayyorladik — xohlasangiz "
+                            + "ko'rib chiqing:",
+                    keyboardService.buildGuideLinkKeyboard());
         });
     }
 

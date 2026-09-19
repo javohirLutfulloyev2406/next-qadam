@@ -75,6 +75,7 @@ public class UpdateDispatcher {
         if (command.isPresent()) {
             switch (command.get()) {
                 case START -> onboardingHandler.handleStart(update);
+                case HELP -> companionHandler.handleHelpCommand(update);
                 case NEW_GOAL -> goalHandler.handleNewGoalCommand(update);
                 case NEXT_STEP -> goalHandler.handleNextStepCommand(update);
                 case DONE -> goalHandler.handleDoneCommand(update);

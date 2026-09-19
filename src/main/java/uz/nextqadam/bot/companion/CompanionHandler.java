@@ -33,6 +33,14 @@ public class CompanionHandler {
         this.telegramExecutor = telegramExecutor;
     }
 
+    public void handleHelpCommand(Update update) {
+        Long chatId = update.getMessage().getChatId();
+        telegramExecutor.sendMessageWithKeyboard(chatId,
+                "📖 Botdan qanday foydalanish haqida to'liq qo'llanma tayyorladik.\n\n"
+                        + "Pastdagi tugma orqali oching — barcha buyruqlar, misollar va tushuntirishlar bilan.",
+                keyboardService.buildGuideLinkKeyboard());
+    }
+
     public void handleMotivateCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);

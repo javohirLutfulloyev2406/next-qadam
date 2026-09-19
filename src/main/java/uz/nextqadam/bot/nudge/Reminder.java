@@ -2,6 +2,8 @@ package uz.nextqadam.bot.nudge;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.goal.Task;
@@ -25,6 +27,7 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "reminders",
         indexes = @Index(name = "idx_reminder_status_scheduled_at", columnList = "status, scheduled_at"))
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

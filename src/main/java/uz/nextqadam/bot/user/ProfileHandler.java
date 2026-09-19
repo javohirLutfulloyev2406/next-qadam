@@ -58,6 +58,14 @@ public class ProfileHandler {
         return stageByChatId.get(chatId) == ProfileStage.AWAITING_TIMEZONE;
     }
 
+    /**
+     * StateCleanupService orqali chaqiriladi (masalan ResetHandler'dan keyin) — shu chatId uchun
+     * qolib ketgan AWAITING_* holatini tozalaydi.
+     */
+    public void clearState(Long chatId) {
+        stageByChatId.remove(chatId);
+    }
+
     public boolean isEditNameCallback(String callbackData) {
         return EDIT_NAME_CALLBACK.equals(callbackData);
     }

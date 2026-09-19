@@ -58,6 +58,14 @@ public class TrackHandler {
         return stageByChatId.get(chatId) == TrackStage.AWAITING_EVENING_CHECKIN_TEXT;
     }
 
+    /**
+     * StateCleanupService orqali chaqiriladi (masalan ResetHandler'dan keyin) — shu chatId uchun
+     * qolib ketgan AWAITING_EVENING_CHECKIN_TEXT holatini tozalaydi.
+     */
+    public void clearState(Long chatId) {
+        stageByChatId.remove(chatId);
+    }
+
     public void handleEveningCheckinCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         stageByChatId.put(chatId, TrackStage.AWAITING_EVENING_CHECKIN_TEXT);

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -75,4 +76,20 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     @Query("SELECT DISTINCT t.goal.user.id FROM Task t WHERE t.status = :status AND t.updatedAt >= :from AND t.updatedAt < :to")
     List<UUID> findDistinctUserIdsByStatusAndUpdatedAtBetween(@Param("status") Task.Status status,
                                                                @Param("from") Instant from, @Param("to") Instant to);
+
+    /**
+     * ResetService.softReset uchun bulk soft-delete.
+     */
+    @Modifying
+    @Query("UPDATE Task t SET t.deleted = true WHERE t.goal.user.id = :userId")
+    void softDeleteAllByUserId(@Param("userId") UUID userId);
+
+    /**
+     * ResetService.hardDelete uchun — native SQL (sabab: GoalRepository.hardDeleteAllByUserId
+     * javdoc'iga qarang). Goal'dan OLDIN chaqirilishi SHART (FK: tasks.goal_id).
+     */
+    @Modifying
+    @Query(value = "DELETE FROM tasks WHERE goal_id IN (SELECT id FROM goals WHERE user_id = :userId)",
+            nativeQuery = true)
+    void hardDeleteAllByUserId(@Param("userId") UUID userId);
 }

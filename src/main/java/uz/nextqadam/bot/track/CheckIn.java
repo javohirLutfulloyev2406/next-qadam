@@ -2,6 +2,8 @@ package uz.nextqadam.bot.track;
 
 import java.time.LocalDate;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 import uz.nextqadam.bot.user.User;
 
@@ -25,6 +27,7 @@ import lombok.experimental.SuperBuilder;
 @Table(name = "check_ins",
         uniqueConstraints = @UniqueConstraint(name = "uq_check_in_user_date_type", columnNames = {"user_id", "date", "type"}),
         indexes = @Index(name = "idx_check_in_user_date", columnList = "user_id, date"))
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

@@ -2,6 +2,8 @@ package uz.nextqadam.bot.goal;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -23,6 +25,7 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "tasks",
         indexes = @Index(name = "idx_task_status_due_date", columnList = "status, due_date"))
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

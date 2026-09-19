@@ -64,6 +64,15 @@ public class PlanHandler {
         return stageByChatId.get(chatId) == PlanStage.AWAITING_BRAINDUMP_TEXT;
     }
 
+    /**
+     * StateCleanupService orqali chaqiriladi (masalan ResetHandler'dan keyin) — shu chatId uchun
+     * qolib ketgan AWAITING_BRAINDUMP_TEXT holatini va check-in tanlovlarini tozalaydi.
+     */
+    public void clearState(Long chatId) {
+        stageByChatId.remove(chatId);
+        selectedTaskIdsByChatId.remove(chatId);
+    }
+
     public boolean isCheckinToggleCallback(String callbackData) {
         return callbackData != null && callbackData.startsWith(CHECKIN_TOGGLE_PREFIX);
     }

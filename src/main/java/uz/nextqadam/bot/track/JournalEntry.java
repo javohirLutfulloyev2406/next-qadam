@@ -1,5 +1,7 @@
 package uz.nextqadam.bot.track;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 import uz.nextqadam.bot.user.User;
 
@@ -19,6 +21,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "journal_entries")
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

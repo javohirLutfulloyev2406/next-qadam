@@ -21,6 +21,7 @@ public enum BotCommand {
     BRAIN_DUMP("/braindump", "Fikrlarni tez yozib tashlash"),
     IDEAS("/ideas", "Saqlangan g'oyalarni ko'rish"),
     EVENING_CHECKIN("/kunim", "Kechki hisobot berish"),
+    RESET_ACCOUNT("/reset", "Hisobni tozalash yoki butunlay o'chirish"),
     // Dasturchi uchun "yashirin" komandalar — asosiy menyuga va setMyCommands ro'yxatiga QO'SHILMAYDI.
     TEST_RETRO("/testretro", "Haftalik retrospektivani darhol sinash"),
     TEST_DRIFT("/testdrift", "Goal drift tekshiruvini darhol sinash"),

@@ -1,5 +1,7 @@
 package uz.nextqadam.bot.plan;
 
+import org.hibernate.annotations.SQLRestriction;
+
 import uz.nextqadam.bot.common.BaseEntity;
 import uz.nextqadam.bot.user.User;
 
@@ -17,6 +19,7 @@ import lombok.experimental.SuperBuilder;
 
 @Entity
 @Table(name = "ideas")
+@SQLRestriction("deleted = false")
 @Getter
 @Setter
 @NoArgsConstructor

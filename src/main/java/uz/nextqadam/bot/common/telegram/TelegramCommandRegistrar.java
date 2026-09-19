@@ -16,11 +16,10 @@ public class TelegramCommandRegistrar {
 
     private static final Logger log = LoggerFactory.getLogger(TelegramCommandRegistrar.class);
 
-    // Hozircha faqat UpdateDispatcher'da real handler'ga ulangan komandalar ro'yxatga olinadi —
-    // help hali TODO, ro'yxatga qo'shilsa foydalanuvchi uni "/" menyusida ko'rib bosadi, lekin
-    // botdan hozircha hech qanday javob kelmaydi.
+    // Hozircha faqat UpdateDispatcher'da real handler'ga ulangan komandalar ro'yxatga olinadi.
     private static final List<uz.nextqadam.bot.common.BotCommand> REGISTERED_COMMANDS = List.of(
             uz.nextqadam.bot.common.BotCommand.START,
+            uz.nextqadam.bot.common.BotCommand.HELP,
             uz.nextqadam.bot.common.BotCommand.NEW_GOAL,
             uz.nextqadam.bot.common.BotCommand.NEXT_STEP,
             uz.nextqadam.bot.common.BotCommand.DONE,

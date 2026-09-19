@@ -7,7 +7,7 @@ import java.util.Optional;
 public enum BotCommand {
 
     START("/start", "Botni ishga tushirish"),
-    HELP("/help", "Yordam va buyruqlar ro'yxati"),
+    HELP("/help", "Botdan foydalanish qo'llanmasi"),
     PROFILE("/profile", "Foydalanuvchi profilini ko'rish"),
     MOTIVATE("/motivate", "Motivatsion xabar olish"),
     SOS("/sos", "Shoshilinch yordam so'rash"),

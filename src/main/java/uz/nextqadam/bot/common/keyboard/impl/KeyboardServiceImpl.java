@@ -27,6 +27,7 @@ public class KeyboardServiceImpl implements KeyboardService {
     private static final int MEMORY_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int CHECKIN_BUTTON_LABEL_MAX_LENGTH = 30;
     private static final int MAX_TODAY_PRIORITIES = 3;
+    private static final String GUIDE_URL = "https://claude.ai/artifact/F8jBX7FVRVGndfTVafaLxv";
 
     @Override
     public InlineKeyboardMarkup createInlineKeyboard(List<String> labels, List<String> callbackData, int columns) {
@@ -176,8 +177,19 @@ public class KeyboardServiceImpl implements KeyboardService {
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
+    @Override
+    public InlineKeyboardMarkup buildGuideLinkKeyboard() {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(urlButton("📖 To'liq qo'llanma", GUIDE_URL))))
+                .build();
+    }
+
     private InlineKeyboardButton button(String label, String callbackData) {
         return InlineKeyboardButton.builder().text(label).callbackData(callbackData).build();
+    }
+
+    private InlineKeyboardButton urlButton(String label, String url) {
+        return InlineKeyboardButton.builder().text(label).url(url).build();
     }
 
     private String truncate(String text, int maxLength) {

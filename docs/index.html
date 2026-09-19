@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NextQadam — foydalanuvchi qo'llanmasi</title>
+<style>
+  :root {
+    --navy: #1F2A44;
+    --teal: #0F766E;
+    --teal-light: #14877D;
+    --gold: #B4883C;
+    --gray: #5B6472;
+    --bg: #F7F8FA;
+    --card-bg: #FFFFFF;
+    --text: #1F2937;
+    --border: #E5E7EB;
+    --code-bg: #F0F2F5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181F;
+      --card-bg: #1B212C;
+      --text: #E7EAEF;
+      --border: #2A313D;
+      --code-bg: #232A36;
+      --gray: #9AA5B8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181F;
+    --card-bg: #1B212C;
+    --text: #E7EAEF;
+    --border: #2A313D;
+    --code-bg: #232A36;
+    --gray: #9AA5B8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .hero {
+    background: linear-gradient(135deg, var(--navy) 0%, #263455 100%);
+    color: #fff;
+    padding: 48px 20px 40px;
+    text-align: center;
+  }
+  .hero .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px; height: 64px;
+    border-radius: 16px;
+    background: var(--teal);
+    font-size: 30px;
+    margin-bottom: 16px;
+  }
+  .hero h1 {
+    margin: 0 0 8px;
+    font-size: clamp(24px, 5vw, 34px);
+  }
+  .hero p {
+    margin: 0;
+    color: #B9C2D6;
+    font-size: 15px;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: -24px auto 60px;
+    padding: 0 16px;
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card h2 {
+    margin-top: 0;
+    font-size: 19px;
+    color: var(--teal-light);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card p { font-size: 15px; }
+  .card ul, .card ol { padding-left: 22px; font-size: 15px; }
+  .card li { margin-bottom: 6px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    color: var(--teal-light);
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 12px 14px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-size: 13.5px;
+    white-space: pre-wrap;
+  }
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin-top: 8px;
+  }
+  .cmd-table th, .cmd-table td {
+    text-align: left;
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-table th {
+    color: var(--gray);
+    font-weight: 600;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  .cmd-table code { white-space: nowrap; }
+  .quote-strip {
+    border-left: 3px solid var(--gold);
+    padding-left: 14px;
+    color: var(--gray);
+    font-style: italic;
+    margin: 14px 0;
+  }
+  .cta {
+    text-align: center;
+    margin: 28px 0 8px;
+  }
+  .cta a {
+    display: inline-block;
+    background: var(--teal);
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 14px 32px;
+    border-radius: 999px;
+    font-size: 16px;
+  }
+  .footer {
+    text-align: center;
+    color: var(--gray);
+    font-size: 13px;
+    margin-top: 30px;
+  }
+  .toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .toc a {
+    font-size: 13px;
+    color: var(--teal-light);
+    text-decoration: none;
+    background: var(--code-bg);
+    padding: 6px 10px;
+    border-radius: 999px;
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">🪜</div>
+  <h1>NextQadam</h1>
+  <p>Big goals. Small steps. Keep moving. — foydalanuvchi qo'llanmasi</p>
+</div>
+
+<div class="wrap">
+
+  <div class="card" id="top">
+    <p style="margin-bottom:0;">NextQadam — katta orzularingizni kichik, bajarilishi oson kunlik qadamlarga bo'lib beruvchi shaxsiy AI hamrohingiz. Telegram'da oddiy suhbat orqali ishlaydi — maxsus ilova o'rnatish shart emas.</p>
+    <div class="quote-strip">Katta reja emas — bugungi bitta qadam. Bot maqsadingizni AI yordamida bosqichlarga bo'lib beradi, har kuni faqat bittasini taklif qiladi, va bajarganingizni kuzatib, kerak bo'lsa moslashadi.</div>
+    <p style="margin-bottom:0;">Botni topish: <b>@next_qadambot</b></p>
+    <div class="toc">
+      <a href="#start">🚀 Boshlash</a>
+      <a href="#goals">🎯 Maqsad</a>
+      <a href="#daily">✅ Kunlik ish</a>
+      <a href="#plan">🌅 Reja</a>
+      <a href="#profile">👤 Profil</a>
+      <a href="#companion">💬 Suhbat</a>
+      <a href="#track">🌙 Tahlil</a>
+      <a href="#nudge">🔔 Eslatma</a>
+      <a href="#commands">📋 Buyruqlar</a>
+    </div>
+  </div>
+
+  <div class="card" id="start">
+    <h2>🚀 Boshlash — <code>/start</code></h2>
+    <p>Botga birinchi marta yozganda <code>/start</code> yuboring.</p>
+    <ol>
+      <li>Bot sizdan <b>ismingizni</b> so'raydi.</li>
+      <li>Keyin <b>muloqot uslubingizni</b> tanlaysiz:
+        <ul>
+          <li>🌱 <b>Yumshoq</b> — iliq, tushunuvchan ohang</li>
+          <li>📋 <b>Oddiy</b> — neytral, ishbilarmon ohang</li>
+          <li>🔥 <b>Qattiq</b> — to'g'ridan-to'g'ri, talabchan ohang</li>
+          <li>⚡ <b>Hardcore</b> — bahonaga toqatsiz, qattiq intizom ohangi</li>
+        </ul>
+      </li>
+    </ol>
+    <p>Tanlagan uslubingiz botning <b>barcha keyingi xabarlariga</b> ta'sir qiladi. Uslubni istalgan vaqtda <code>/profile</code> orqali o'zgartirishingiz mumkin.</p>
+  </div>
+
+  <div class="card" id="goals">
+    <h2>🎯 Maqsad qo'yish va AI reja — <code>/newgoal</code>, <code>/goals</code></h2>
+    <p><code>/newgoal</code> buyrug'ini yuboring, so'ng katta maqsadingizni erkin gapda yozing — masalan: <i>"3 oyda Java backend developer bo'lmoqchiman"</i>.</p>
+    <p>Sun'iy intellekt maqsadingizni avtomatik ravishda <b>3–10 ta bosqichga</b> va har bir bosqichni <b>1–5 ta aniq vazifaga</b> bo'lib beradi, so'ng birinchi vazifani darhol taklif qiladi.</p>
+    <p><code>/goals</code> orqali barcha faol maqsadlaringiz va progressni ko'rasiz:</p>
+    <pre>🎯 Java Backend Developer
+██████░░░░ 60%
+6/10 vazifa bajarildi</pre>
+  </div>
+
+  <div class="card" id="daily">
+    <h2>✅ Kundalik ish — <code>/nextstep</code></h2>
+    <p><code>/nextstep</code> navbatdagi vazifangizni taxminiy vaqt bilan ko'rsatadi. Xabar ostida ikkita tugma bor:</p>
+    <ul>
+      <li><b>✅ Bajardim</b> — darhol keyingi vazifa chiqadi</li>
+      <li><b>⏰ Keyinroq</b> — vazifani bir soatga kechiktiradi</li>
+    </ul>
+    <p style="margin-bottom:0;">Bitta vazifani ketma-ket <b>3 marta</b> kechiktirsangiz, bot uni avtomatik <b>kichraytiradi</b> (masalan 30 daqiqalik ish 10 daqiqaga tushadi).</p>
+  </div>
+
+  <div class="card" id="plan">
+    <h2>🌅 Ertalabki reja va fikr tashlash</h2>
+    <p><b><code>/planday</code></b> — kuningizni boshlashdan oldin, eng muhim <b>1–3 ta</b> vazifani checkbox orqali belgilaysiz. Shu vazifalar kun davomida birinchi navbatda ko'rsatiladi.</p>
+    <p><b><code>/braindump</code></b> — xayolingizdagi hamma narsani erkin yozib tashlaysiz, AI avtomatik ravishda ajratadi:</p>
+    <ul>
+      <li>✅ <b>Vazifa</b> — aniq bajariladigan ish</li>
+      <li>💡 <b>G'oya</b> — kelajakda o'ylab ko'rish kerak bo'lgan fikr</li>
+      <li>⏰ <b>Eslatma</b> — vaqtga bog'liq narsa</li>
+    </ul>
+    <p style="margin-bottom:0;"><b><code>/ideas</code></b> — saqlangan g'oyalaringizni ko'rsatadi.</p>
+  </div>
+
+  <div class="card" id="profile">
+    <h2>👤 Profil va AI xotira</h2>
+    <p><b><code>/profile</code></b> — ism, uslub, vaqt zonasi va faol maqsadlar sonini ko'rsatadi, tugmalar orqali tahrirlanadi.</p>
+    <p><b>AI xotira:</b> bot siz haqingizdagi muhim ma'lumotlarni (masalan oxirgi maqsadingizni) avtomatik eslab qoladi va keyingi <code>/newgoal</code>da hisobga oladi.</p>
+    <p><b><code>/memory</code></b> — bot nimalarni eslab qolganini ko'rsatadi, xohlagan yozuvni o'chirish mumkin.</p>
+    <p style="margin-bottom:0;"><b><code>/forget</code></b> — butun xotirani tozalaydi (tasdiqlash so'raladi).</p>
+  </div>
+
+  <div class="card" id="companion">
+    <h2>💬 Suhbat va motivatsiya</h2>
+    <p>Botga hech qanday buyruqsiz, oddiy odam bilan gaplashgandek yozishingiz mumkin — bot tanlagan uslubingiz va kontekstingizni hisobga olib javob beradi.</p>
+    <p><b><code>/motivate</code></b> — haqiqiy tarixingizga asoslangan shaxsiy motivatsion xabar.</p>
+    <p style="margin-bottom:0;"><b><code>/sos</code></b> — qiynalayotgan vazifani <b>5 daqiqalik</b> mikro-qadamga qisqartiradi.</p>
+  </div>
+
+  <div class="card" id="track">
+    <h2>🌙 Kun yakuni va haftalik tahlil</h2>
+    <p><b><code>/kunim</code></b> — kechqurun erkin yozgan hisobotingizni AI o'qib, qaysi vazifalar bajarilgan-bajarilmaganini o'zi aniqlaydi.</p>
+    <p><b>Haftalik xulosa</b> — har yakshanba avtomatik ravishda, shaxsiy natijalaringiz asosida yuboriladi.</p>
+    <p style="margin-bottom:0;"><b>Yo'nalish nazorati</b> — bot harakatlaringiz maqsadingizga mos kelayotganini kuzatadi, chetlashish sezilsa ogohlantiradi.</p>
+  </div>
+
+  <div class="card" id="nudge">
+    <h2>🔔 Eslatmalar (avtomatik)</h2>
+    <ul style="margin-bottom:0;">
+      <li>Ertalab belgilagan vazifa kechgacha bajarilmasa, bot soat 16:00 atrofida eslatadi</li>
+      <li><code>/braindump</code> orqali saqlangan eslatmalar o'z vaqtida yetib boradi</li>
+      <li>Har bir eslatma sizning tanlagan uslubingizga mos ohangda yoziladi</li>
+    </ul>
+  </div>
+
+  <div class="card" id="commands">
+    <h2>📋 Barcha buyruqlar</h2>
+    <table class="cmd-table">
+      <tr><th>Buyruq</th><th>Nima qiladi</th></tr>
+      <tr><td><code>/start</code></td><td>Ro'yxatdan o'tish, ism va uslub tanlash</td></tr>
+      <tr><td><code>/newgoal</code></td><td>Yangi maqsad, AI orqali bosqichlarga bo'lish</td></tr>
+      <tr><td><code>/nextstep</code></td><td>Navbatdagi vazifani ko'rsatish</td></tr>
+      <tr><td><code>/goals</code></td><td>Faol maqsadlar va progress</td></tr>
+      <tr><td><code>/planday</code></td><td>Bugungi ustuvor vazifani belgilash</td></tr>
+      <tr><td><code>/braindump</code></td><td>Fikrlarni yozib, AI orqali tartiblash</td></tr>
+      <tr><td><code>/ideas</code></td><td>Saqlangan g'oyalarni ko'rish</td></tr>
+      <tr><td><code>/profile</code></td><td>Profilni ko'rish va tahrirlash</td></tr>
+      <tr><td><code>/memory</code></td><td>Bot nimalarni eslab qolganini ko'rish</td></tr>
+      <tr><td><code>/forget</code></td><td>Butun xotirani o'chirish</td></tr>
+      <tr><td><code>/motivate</code></td><td>Shaxsiy motivatsion xabar</td></tr>
+      <tr><td><code>/sos</code></td><td>Vazifani mikro-qadamga qisqartirish</td></tr>
+      <tr><td><code>/kunim</code></td><td>Kechki hisobot berish</td></tr>
+    </table>
+    <p style="margin-top:14px; margin-bottom:0;">Bundan tashqari, botga <b>oddiy, erkin matn</b> yozish orqali ham suhbatlashishingiz mumkin.</p>
+  </div>
+
+  <div class="cta">
+    <a href="https://t.me/next_qadambot">Botni ochish — @next_qadambot</a>
+  </div>
+
+  <div class="footer">NextQadam · Big goals. Small steps. Keep moving.</div>
+
+</div>
+
+</body>
+</html>

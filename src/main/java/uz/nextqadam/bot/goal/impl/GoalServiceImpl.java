@@ -169,6 +169,8 @@ public class GoalServiceImpl implements GoalService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new NextQadamException("Task topilmadi: " + taskId));
         task.setStatus(Task.Status.DONE);
+        // Bajarilgan vazifa — ketma-ket kechiktirish "streak"ining uzilishi hisoblanadi.
+        task.setConsecutiveSnoozeCount(0);
         return taskRepository.save(task);
     }
 

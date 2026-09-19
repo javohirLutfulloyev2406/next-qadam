@@ -137,7 +137,10 @@ public class KeyboardServiceImpl implements KeyboardService {
     @Override
     public InlineKeyboardMarkup buildTaskActionKeyboard(UUID taskId) {
         return InlineKeyboardMarkup.builder()
-                .keyboard(List.of(List.of(button("✅ Bajardim", "TASK_DONE_" + taskId))))
+                .keyboard(List.of(List.of(
+                        button("✅ Bajardim", "TASK_DONE_" + taskId),
+                        button("⏰ Keyinroq", "TASK_SNOOZE_" + taskId)
+                )))
                 .build();
     }
 

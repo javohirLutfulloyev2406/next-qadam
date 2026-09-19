@@ -23,7 +23,8 @@ public enum BotCommand {
     EVENING_CHECKIN("/kunim", "Kechki hisobot berish"),
     // Dasturchi uchun "yashirin" komandalar — asosiy menyuga va setMyCommands ro'yxatiga QO'SHILMAYDI.
     TEST_RETRO("/testretro", "Haftalik retrospektivani darhol sinash"),
-    TEST_DRIFT("/testdrift", "Goal drift tekshiruvini darhol sinash");
+    TEST_DRIFT("/testdrift", "Goal drift tekshiruvini darhol sinash"),
+    TEST_NUDGE("/testnudge", "Kunlik ustuvorlik nudge'ini darhol sinash");
 
     // Doimiy tugmalar panelidagi (ReplyKeyboard) matnlarni tegishli komandaga bog'lash uchun.
     private static final Map<String, BotCommand> BUTTON_LABEL_TO_COMMAND = Map.of(

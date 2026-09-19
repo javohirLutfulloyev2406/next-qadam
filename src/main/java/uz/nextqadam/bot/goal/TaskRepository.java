@@ -60,4 +60,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
      * keluvchi Task'lar (holatidan qat'i nazar).
      */
     List<Task> findByGoal_User_IdAndDueDateBetween(UUID userId, Instant from, Instant to);
+
+    /**
+     * Snooze muddati o'tgan Task'larni qayta PENDING'ga o'tkazish uchun (NudgeService.requeueDueSnoozedTasks).
+     */
+    List<Task> findAllByStatusAndSnoozedUntilBefore(Task.Status status, Instant snoozedUntil);
 }

@@ -213,7 +213,11 @@ public class GoalHandler {
         );
     }
 
-    private String buildTaskCardMessage(Task task) {
+    /**
+     * NudgeHandler kabi boshqa modullar ham (masalan adaptive-shrink'dan keyin qayta ko'rsatishda)
+     * bir xil kartochka ko'rinishidan foydalanishi uchun public.
+     */
+    public String buildTaskCardMessage(Task task) {
         StringBuilder sb = new StringBuilder();
         sb.append("📌 <b>Bugungi qadamingiz</b>\n\n");
         sb.append(task.getTitle()).append("\n");

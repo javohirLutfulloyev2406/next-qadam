@@ -11,4 +11,21 @@ public interface MessageTemplateService {
     String noPendingTask(ToneType tone);
 
     String goalDecompositionIntro(ToneType tone);
+
+    /**
+     * Muddati kelgan Reminder yoki kunlik ustuvorlik nudge'i uchun matn — taskTitle o'rniga
+     * Reminder.content ham berilishi mumkin (masalan task'ga bog'lanmagan eslatmalar uchun).
+     */
+    String reminderNudge(ToneType tone, String taskTitle);
+
+    /**
+     * "⏰ Keyinroq" tugmasi bosilganda, oddiy (adaptive-shrink qo'llanilmagan) holatda ko'rsatiladigan
+     * tasdiqlash matni.
+     */
+    String snoozeAck(ToneType tone);
+
+    /**
+     * Task 3 marta ketma-ket kechiktirilib, avtomatik kichraytirilganda ko'rsatiladigan xabar.
+     */
+    String adaptiveShrinkNotice(ToneType tone, int newEstimatedMinutes);
 }

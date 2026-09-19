@@ -15,6 +15,7 @@ import uz.nextqadam.bot.common.errorlog.ErrorNotificationService;
 import uz.nextqadam.bot.companion.CompanionHandler;
 import uz.nextqadam.bot.goal.GoalHandler;
 import uz.nextqadam.bot.memory.MemoryHandler;
+import uz.nextqadam.bot.nudge.NudgeHandler;
 import uz.nextqadam.bot.plan.PlanHandler;
 import uz.nextqadam.bot.track.TrackHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
@@ -32,11 +33,12 @@ public class UpdateDispatcher {
     private final PlanHandler planHandler;
     private final CompanionHandler companionHandler;
     private final TrackHandler trackHandler;
+    private final NudgeHandler nudgeHandler;
     private final ErrorNotificationService errorNotificationService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
-                             CompanionHandler companionHandler, TrackHandler trackHandler,
+                             CompanionHandler companionHandler, TrackHandler trackHandler, NudgeHandler nudgeHandler,
                              ErrorNotificationService errorNotificationService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
@@ -45,6 +47,7 @@ public class UpdateDispatcher {
         this.planHandler = planHandler;
         this.companionHandler = companionHandler;
         this.trackHandler = trackHandler;
+        this.nudgeHandler = nudgeHandler;
         this.errorNotificationService = errorNotificationService;
     }
 
@@ -87,6 +90,7 @@ public class UpdateDispatcher {
                 case EVENING_CHECKIN -> trackHandler.handleEveningCheckinCommand(update);
                 case TEST_RETRO -> trackHandler.handleTestRetroCommand(update);
                 case TEST_DRIFT -> trackHandler.handleTestDriftCommand(update);
+                case TEST_NUDGE -> nudgeHandler.handleTestNudgeCommand(update);
                 default -> log.info("[{}] TODO: keyingi modulga ulanadi. command={}, chatId={}", logId, command.get(), chatId);
             }
             return;
@@ -195,6 +199,11 @@ public class UpdateDispatcher {
 
         if (goalHandler.isTaskDoneCallback(data)) {
             goalHandler.handleTaskDoneCallback(update);
+            return;
+        }
+
+        if (nudgeHandler.isTaskSnoozeCallback(data)) {
+            nudgeHandler.handleSnoozeCallback(update);
             return;
         }
 

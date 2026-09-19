@@ -48,6 +48,30 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
             ToneType.HARDCORE, "Rejani tuzdim. Gap yo'q, endi bajarish bosqichi — orqaga qarash yo'q:"
     );
 
+    private static final Map<ToneType, String> REMINDER_NUDGE = Map.of(
+            ToneType.SOFT, "Xayrli kun 🌱 Sizga eslatib qo'yay — \"%s\" hali kutmoqda. Shoshilmasdan, "
+                    + "imkoningiz bo'lganda qarab chiqing.",
+            ToneType.NORMAL, "📌 Eslatma: \"%s\" hali bajarilmagan.",
+            ToneType.HARD, "\"%s\" — hali qilinmadi. Vaqt ketyapti.",
+            ToneType.HARDCORE, "\"%s\". Hali qo'l tegmagan. Boshqa bahona yo'q — hoziroq bosh."
+    );
+
+    private static final Map<ToneType, String> SNOOZE_ACK = Map.of(
+            ToneType.SOFT, "Hechqisi yo'q, hademay qayta eslataman 🙂",
+            ToneType.NORMAL, "⏰ Xo'p, bir soatdan keyin qayta eslataman.",
+            ToneType.HARD, "Yaxshi, bir soatdan keyin yana eslataman. Lekin cho'zmang.",
+            ToneType.HARDCORE, "Bir soat berdim. Undan ortiq kutish yo'q."
+    );
+
+    private static final Map<ToneType, String> ADAPTIVE_SHRINK_NOTICE = Map.of(
+            ToneType.SOFT, "Sezdim, bu vazifa biroz og'irroq ekan 🌱 Uni %d daqiqagacha kichraytirdim — "
+                    + "endi bemalol boshlashingiz mumkin.",
+            ToneType.NORMAL, "🔄 Bu vazifani 3 marta kechiktirdingiz — men uni %d daqiqagacha kichraytirdim. "
+                    + "Endi osonroq bo'ladi 🙂",
+            ToneType.HARD, "3 marta kechiktirdingiz. Vazifani %d daqiqaga tushirdim — endi bahona qolmadi.",
+            ToneType.HARDCORE, "Uch marta qochding. Endi bahona qolmadi — bor-yo'g'i %d daqiqa."
+    );
+
     @Override
     public String welcomeAfterTone(ToneType tone, String userName) {
         return WELCOME_AFTER_TONE.get(tone).formatted(userName);
@@ -66,5 +90,20 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     @Override
     public String goalDecompositionIntro(ToneType tone) {
         return GOAL_DECOMPOSITION_INTRO.get(tone);
+    }
+
+    @Override
+    public String reminderNudge(ToneType tone, String taskTitle) {
+        return REMINDER_NUDGE.get(tone).formatted(taskTitle);
+    }
+
+    @Override
+    public String snoozeAck(ToneType tone) {
+        return SNOOZE_ACK.get(tone);
+    }
+
+    @Override
+    public String adaptiveShrinkNotice(ToneType tone, int newEstimatedMinutes) {
+        return ADAPTIVE_SHRINK_NOTICE.get(tone).formatted(newEstimatedMinutes);
     }
 }

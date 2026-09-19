@@ -24,7 +24,7 @@ telegram:
 ai:
   client:
     api-key: ${LLM_API_KEY}
-    model: ${AI_MODEL:gemini-3.6-flash}
+    model: ${AI_MODEL:gemini-3.5-flash}
     timeout-seconds: ${AI_TIMEOUT_SECONDS:20}
 
 logging:

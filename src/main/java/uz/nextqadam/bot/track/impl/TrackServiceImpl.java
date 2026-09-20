@@ -2,7 +2,6 @@ package uz.nextqadam.bot.track.impl;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +22,7 @@ import uz.nextqadam.bot.ai.dto.GoalDriftResult;
 import uz.nextqadam.bot.ai.dto.TaskClassification;
 import uz.nextqadam.bot.ai.dto.TaskSummaryForPrompt;
 import uz.nextqadam.bot.ai.dto.WeeklyRetrospective;
+import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.goal.Goal;
 import uz.nextqadam.bot.goal.GoalRepository;
 import uz.nextqadam.bot.goal.GoalService;
@@ -163,7 +163,7 @@ public class TrackServiceImpl implements TrackService {
     }
 
     private List<Task> findTodaysTasksForCheckin(UUID userId) {
-        Instant dayStart = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
+        Instant dayStart = TimeUtil.todayInTashkent().atStartOfDay(TimeUtil.TASHKENT_ZONE).toInstant();
         Instant dayEnd = dayStart.plus(1, ChronoUnit.DAYS);
         return taskRepository.findTodaysTasksForCheckin(userId, CHECKIN_STATUSES, dayStart, dayEnd);
     }
@@ -183,7 +183,7 @@ public class TrackServiceImpl implements TrackService {
     }
 
     private void saveEveningCheckIn(UUID userId, String rawText, String parsedSummary) {
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = TimeUtil.todayInTashkent();
         CheckIn checkIn = checkInRepository.findByUserIdAndDateAndType(userId, today, CheckIn.Type.EVENING)
                 .orElseGet(() -> CheckIn.builder()
                         .user(userRepository.getReferenceById(userId))

@@ -3,7 +3,6 @@ package uz.nextqadam.bot.plan.impl;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +17,7 @@ import uz.nextqadam.bot.ai.PromptBuilder;
 import uz.nextqadam.bot.ai.dto.BrainDumpResult;
 import uz.nextqadam.bot.ai.dto.ReminderDraft;
 import uz.nextqadam.bot.common.exception.NextQadamException;
+import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.goal.Goal;
 import uz.nextqadam.bot.goal.GoalService;
 import uz.nextqadam.bot.goal.Task;
@@ -113,7 +113,7 @@ public class PlanServiceImpl implements PlanService {
     }
 
     private void recordMorningCheckIn(UUID userId, List<Task> selectedTasks) {
-        LocalDate today = LocalDate.now(ZoneOffset.UTC);
+        LocalDate today = TimeUtil.todayInTashkent();
         String parsedSummary = selectedTasks.stream().map(Task::getTitle).collect(Collectors.joining(", "));
 
         CheckIn checkIn = checkInRepository.findByUserIdAndDateAndType(userId, today, CheckIn.Type.MORNING)
@@ -179,9 +179,9 @@ public class PlanServiceImpl implements PlanService {
     }
 
     private Instant resolveReminderTime(String whenHint) {
-        LocalDate tomorrow = LocalDate.now(ZoneOffset.UTC).plusDays(1);
+        LocalDate tomorrow = TimeUtil.todayInTashkent().plusDays(1);
         boolean isEvening = whenHint != null && whenHint.toLowerCase().contains(EVENING_HINT_KEYWORD);
         LocalTime time = isEvening ? EVENING_REMINDER_TIME : MORNING_REMINDER_TIME;
-        return tomorrow.atTime(time).toInstant(ZoneOffset.UTC);
+        return tomorrow.atTime(time).atZone(TimeUtil.TASHKENT_ZONE).toInstant();
     }
 }

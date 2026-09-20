@@ -76,7 +76,7 @@ public class GoalHandler {
         beginGoalDescriptionFlow(chatId);
         telegramExecutor.sendMessage(chatId,
                 "Katta maqsadingizni bir necha jumla bilan yozing "
-                        + "(masalan: \"6 oyda backend developer bo'lmoqchiman\")");
+                        + "(masalan: \"6 oyda ingliz tilimni yaxshi darajaga olib chiqmoqchiman\")");
     }
 
     /**

@@ -46,6 +46,21 @@ public class TelegramExecutorImpl implements TelegramExecutor {
     }
 
     @Override
+    public Integer sendPlaceholder(Long chatId, String text) {
+        SendMessage message = SendMessage.builder()
+                .chatId(String.valueOf(chatId))
+                .text(text)
+                .parseMode(PARSE_MODE_HTML)
+                .build();
+        try {
+            return telegramBotFacade.execute(message).getMessageId();
+        } catch (TelegramApiException e) {
+            log.error("Placeholder xabar yuborishda xatolik: chatId={}", chatId, e);
+            return null;
+        }
+    }
+
+    @Override
     public boolean sendMessageForBroadcast(Long chatId, String text) {
         SendMessage message = SendMessage.builder()
                 .chatId(String.valueOf(chatId))

@@ -72,6 +72,13 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
             ToneType.HARDCORE, "Uch marta qochding. Endi bahona qolmadi — bor-yo'g'i %d daqiqa."
     );
 
+    private static final Map<ToneType, String> TYPING_PLACEHOLDER = Map.of(
+            ToneType.SOFT, "🌱 O'ylab ko'ryapman, biroz kuting...",
+            ToneType.NORMAL, "⏳ Tayyorlanmoqda...",
+            ToneType.HARD, "⚙️ Ishlov berilmoqda.",
+            ToneType.HARDCORE, "🔥 Kutib tur, hozir bo'ladi."
+    );
+
     @Override
     public String welcomeAfterTone(ToneType tone, String userName) {
         return WELCOME_AFTER_TONE.get(tone).formatted(userName);
@@ -105,5 +112,10 @@ public class MessageTemplateServiceImpl implements MessageTemplateService {
     @Override
     public String adaptiveShrinkNotice(ToneType tone, int newEstimatedMinutes) {
         return ADAPTIVE_SHRINK_NOTICE.get(tone).formatted(newEstimatedMinutes);
+    }
+
+    @Override
+    public String typingPlaceholder(ToneType tone) {
+        return TYPING_PLACEHOLDER.get(tone);
     }
 }

@@ -8,6 +8,15 @@ public interface TelegramExecutor {
     void sendMessage(Long chatId, String text);
 
     /**
+     * AI javobini kutish paytida ko'rsatiladigan vaqtinchalik placeholder xabarini yuboradi va
+     * uning message_id'sini qaytaradi — natija tayyor bo'lgach shu ID orqali editMessageText
+     * chaqirilib, placeholder haqiqiy javobga "aylantiriladi". Xatolik yuz bersa (masalan
+     * foydalanuvchi botni bloklagan), {@code null} qaytaradi — chaqiruvchi bu holda oddiy
+     * sendMessage'ga qaytishi kerak.
+     */
+    Integer sendPlaceholder(Long chatId, String text);
+
+    /**
      * sendMessage'dan farqli o'laroq, TelegramApiException'ni yutib qo'ymaydi — muvaffaqiyat/
      * muvaffaqiyatsizlikni boolean orqali qaytaradi. Admin broadcast'ida botni bloklagan
      * foydalanuvchilarni sanash uchun kerak.

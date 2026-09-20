@@ -19,6 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 
 import uz.nextqadam.bot.ai.AiClientException;
 import uz.nextqadam.bot.ai.AiResponseParseException;
+import uz.nextqadam.bot.common.MessageTemplateService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService.CheckinTaskOption;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -33,7 +34,6 @@ public class PlanHandler {
 
     private static final String CHECKIN_TOGGLE_PREFIX = "CHECKIN_TOGGLE_";
     private static final String CHECKIN_CONFIRM_CALLBACK = "CHECKIN_CONFIRM";
-    private static final String TYPING_ACTION = "typing";
     private static final int PLAN_DAY_TASK_LIMIT = 15;
     private static final int MAX_TODAY_PRIORITIES = 3;
     private static final int IDEAS_LIST_LIMIT = 10;
@@ -49,16 +49,18 @@ public class PlanHandler {
     private final IdeaRepository ideaRepository;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
+    private final MessageTemplateService messageTemplateService;
 
     public PlanHandler(PlanService planService, UserService userService, TaskRepository taskRepository,
                         IdeaRepository ideaRepository, KeyboardService keyboardService,
-                        TelegramExecutor telegramExecutor) {
+                        TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService) {
         this.planService = planService;
         this.userService = userService;
         this.taskRepository = taskRepository;
         this.ideaRepository = ideaRepository;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
+        this.messageTemplateService = messageTemplateService;
     }
 
     public boolean isAwaitingBrainDumpText(Long chatId) {
@@ -172,18 +174,30 @@ public class PlanHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
         BrainDumpSummary summary;
         try {
             summary = planService.processBrainDump(user.getId(), rawText);
         } catch (AiClientException | AiResponseParseException e) {
-            telegramExecutor.sendMessage(chatId,
+            showResult(chatId, placeholderMessageId,
                     "Kechirasiz, fikrlaringizni tartiblashda xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring.");
             return;
         }
 
-        telegramExecutor.sendMessageWithReplyKeyboard(chatId, formatBrainDumpSummary(summary),
-                keyboardService.buildMainMenuKeyboard());
+        showResult(chatId, placeholderMessageId, formatBrainDumpSummary(summary));
+    }
+
+    /**
+     * Placeholder xabarni yakuniy matn bilan almashtiradi (editMessageText). Agar placeholder
+     * biror sababga ko'ra yuborilmagan bo'lsa (messageId == null), oddiy yangi xabar yuboriladi.
+     */
+    private void showResult(Long chatId, Integer placeholderMessageId, String text) {
+        if (placeholderMessageId != null) {
+            telegramExecutor.editMessageText(chatId, placeholderMessageId, text);
+        } else {
+            telegramExecutor.sendMessage(chatId, text);
+        }
     }
 
     public void handleIdeasCommand(Update update) {

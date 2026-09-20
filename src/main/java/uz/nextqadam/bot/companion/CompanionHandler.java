@@ -3,8 +3,10 @@ package uz.nextqadam.bot.companion;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import uz.nextqadam.bot.common.HtmlEscaper;
+import uz.nextqadam.bot.common.MessageTemplateService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.goal.GoalService;
@@ -15,7 +17,6 @@ import uz.nextqadam.bot.user.UserService;
 @Component
 public class CompanionHandler {
 
-    private static final String TYPING_ACTION = "typing";
     private static final String NOT_REGISTERED_MESSAGE = "Avval /start orqali ro'yxatdan o'ting.";
 
     private final CompanionService companionService;
@@ -23,14 +24,17 @@ public class CompanionHandler {
     private final GoalService goalService;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
+    private final MessageTemplateService messageTemplateService;
 
     public CompanionHandler(CompanionService companionService, UserService userService, GoalService goalService,
-                             KeyboardService keyboardService, TelegramExecutor telegramExecutor) {
+                             KeyboardService keyboardService, TelegramExecutor telegramExecutor,
+                             MessageTemplateService messageTemplateService) {
         this.companionService = companionService;
         this.userService = userService;
         this.goalService = goalService;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
+        this.messageTemplateService = messageTemplateService;
     }
 
     public void handleHelpCommand(Update update) {
@@ -49,9 +53,10 @@ public class CompanionHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
         String motivation = companionService.generateMotivation(user.getId());
-        telegramExecutor.sendMessage(chatId, "🔥 " + HtmlEscaper.escape(motivation));
+        showResult(chatId, placeholderMessageId, "🔥 " + HtmlEscaper.escape(motivation), null);
     }
 
     public void handleSosCommand(Update update) {
@@ -69,7 +74,8 @@ public class CompanionHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
         String microStep = companionService.generateSosMicroStep(user.getId());
 
         String text = "🆘 <b>Yaxshi, sekinroq boramiz.</b>\n\n"
@@ -77,7 +83,7 @@ public class CompanionHandler {
                 + "👉 " + HtmlEscaper.escape(microStep) + "\n\n"
                 + "Shuning o'zi kifoya. Qolganini keyin o'ylaymiz.";
 
-        telegramExecutor.sendMessageWithKeyboard(chatId, text, keyboardService.buildTaskActionKeyboard(currentTask.getId()));
+        showResult(chatId, placeholderMessageId, text, keyboardService.buildTaskActionKeyboard(currentTask.getId()));
     }
 
     public void handleFreeChat(Update update) {
@@ -90,8 +96,27 @@ public class CompanionHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
         String reply = companionService.generateFreeChatReply(user.getId(), message.getText());
-        telegramExecutor.sendMessage(chatId, HtmlEscaper.escape(reply));
+        showResult(chatId, placeholderMessageId, HtmlEscaper.escape(reply), null);
+    }
+
+    /**
+     * Placeholder xabarni yakuniy matn bilan (kerak bo'lsa tugma bilan) almashtiradi. Agar
+     * placeholder biror sababga ko'ra yuborilmagan bo'lsa (messageId == null), oddiy yangi xabar
+     * yuboriladi — placeholder hech qachon o'zgarishsiz osilib qolmasligi kerak.
+     */
+    private void showResult(Long chatId, Integer placeholderMessageId, String text, InlineKeyboardMarkup keyboard) {
+        if (placeholderMessageId != null) {
+            telegramExecutor.editMessageText(chatId, placeholderMessageId, text);
+            if (keyboard != null) {
+                telegramExecutor.editMessageReplyMarkup(chatId, placeholderMessageId, keyboard);
+            }
+        } else if (keyboard != null) {
+            telegramExecutor.sendMessageWithKeyboard(chatId, text, keyboard);
+        } else {
+            telegramExecutor.sendMessage(chatId, text);
+        }
     }
 }

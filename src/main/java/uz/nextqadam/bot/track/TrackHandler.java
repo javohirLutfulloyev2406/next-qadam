@@ -15,6 +15,7 @@ import uz.nextqadam.bot.ai.dto.GoalDriftResult;
 import uz.nextqadam.bot.ai.dto.TaskClassification;
 import uz.nextqadam.bot.ai.dto.WeeklyRetrospective;
 import uz.nextqadam.bot.common.HtmlEscaper;
+import uz.nextqadam.bot.common.MessageTemplateService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.goal.GoalHandler;
@@ -42,16 +43,18 @@ public class TrackHandler {
     private final TaskRepository taskRepository;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
+    private final MessageTemplateService messageTemplateService;
 
     public TrackHandler(TrackService trackService, UserService userService, GoalHandler goalHandler,
                          TaskRepository taskRepository, KeyboardService keyboardService,
-                         TelegramExecutor telegramExecutor) {
+                         TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService) {
         this.trackService = trackService;
         this.userService = userService;
         this.goalHandler = goalHandler;
         this.taskRepository = taskRepository;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
+        this.messageTemplateService = messageTemplateService;
     }
 
     public boolean isAwaitingEveningCheckinText(Long chatId) {
@@ -87,15 +90,28 @@ public class TrackHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
         EveningCheckinResult result = trackService.processEveningCheckin(user.getId(), rawText);
 
         if (result == null) {
-            telegramExecutor.sendMessage(chatId, "Rahmat, qayd etib qo'ydim 🙂");
+            showResult(chatId, placeholderMessageId, "Rahmat, qayd etib qo'ydim 🙂");
             return;
         }
 
-        telegramExecutor.sendMessage(chatId, formatEveningCheckinResult(result));
+        showResult(chatId, placeholderMessageId, formatEveningCheckinResult(result));
+    }
+
+    /**
+     * Placeholder xabarni yakuniy matn bilan almashtiradi (editMessageText). Agar placeholder
+     * biror sababga ko'ra yuborilmagan bo'lsa (messageId == null), oddiy yangi xabar yuboriladi.
+     */
+    private void showResult(Long chatId, Integer placeholderMessageId, String text) {
+        if (placeholderMessageId != null) {
+            telegramExecutor.editMessageText(chatId, placeholderMessageId, text);
+        } else {
+            telegramExecutor.sendMessage(chatId, text);
+        }
     }
 
     public void handleTestRetroCommand(Update update) {

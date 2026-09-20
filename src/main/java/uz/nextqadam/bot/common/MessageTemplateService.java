@@ -28,4 +28,13 @@ public interface MessageTemplateService {
      * Task 3 marta ketma-ket kechiktirilib, avtomatik kichraytirilganda ko'rsatiladigan xabar.
      */
     String adaptiveShrinkNotice(ToneType tone, int newEstimatedMinutes);
+
+    /**
+     * AI javobini kutish paytida ko'rsatiladigan placeholder xabar — TelegramExecutor.
+     * sendPlaceholder() orqali yuboriladi, natija tayyor bo'lgach editMessageText bilan haqiqiy
+     * javobga almashtiriladi. Telegram'ning o'zi ko'rsatadigan "typing..." statusi atigi 5
+     * soniyadan keyin o'chib qolgani uchun, uzoqroq AI javoblarida foydalanuvchi botni
+     * "osilib qoldi" deb o'ylamasligi uchun kerak.
+     */
+    String typingPlaceholder(ToneType tone);
 }

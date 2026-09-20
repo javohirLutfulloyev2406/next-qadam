@@ -22,7 +22,6 @@ public class GoalHandler {
 
     private static final String TASK_DONE_CALLBACK_PREFIX = "TASK_DONE_";
     private static final String GOALS_NEXTSTEP_CALLBACK_PREFIX = "GOALS_NEXTSTEP_";
-    private static final String TYPING_ACTION = "typing";
     private static final int PROGRESS_BAR_BLOCKS = 10;
     private static final String ALL_TASKS_DONE_MESSAGE =
             "🎉 <b>Bugungi barcha vazifalar tugadi!</b>\n\nErtaga yangi qadam kutmoqda.";
@@ -101,24 +100,37 @@ public class GoalHandler {
             return;
         }
 
-        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
+        Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
+                messageTemplateService.typingPlaceholder(user.getTonePreference()));
+
         Goal goal = goalService.createGoalWithAiDecomposition(user.getId(), rawDescription);
 
         if (goal.getDescription() != null && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_FAILURE_MARKER)) {
-            telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+            showResult(chatId, placeholderMessageId,
                     "🎯 Maqsadingiz saqlandi, lekin uni bosqichlarga bo'lishda xatolik yuz berdi. "
-                            + "Birozdan so'ng /newgoal orqali qayta urinib ko'ring.",
-                    keyboardService.buildMainMenuKeyboard());
+                            + "Birozdan so'ng /newgoal orqali qayta urinib ko'ring.");
             return;
         }
 
         String intro = messageTemplateService.goalDecompositionIntro(user.getTonePreference());
-        telegramExecutor.sendMessageWithReplyKeyboard(chatId, intro + "\n\n" + formatGoalSummary(goal),
-                keyboardService.buildMainMenuKeyboard());
+        showResult(chatId, placeholderMessageId, intro + "\n\n" + formatGoalSummary(goal));
 
         goalService.getNextStep(user.getId())
                 .ifPresent(task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task),
                         keyboardService.buildTaskActionKeyboard(task.getId())));
+    }
+
+    /**
+     * Placeholder xabarni yakuniy matn bilan almashtiradi (editMessageText). Agar placeholder
+     * biror sababga ko'ra yuborilmagan bo'lsa (messageId == null), oddiy yangi xabar yuboriladi —
+     * placeholder hech qachon o'zgarishsiz osilib qolmasligi kerak.
+     */
+    private void showResult(Long chatId, Integer placeholderMessageId, String text) {
+        if (placeholderMessageId != null) {
+            telegramExecutor.editMessageText(chatId, placeholderMessageId, text);
+        } else {
+            telegramExecutor.sendMessage(chatId, text);
+        }
     }
 
     public void handleNextStepCommand(Update update) {

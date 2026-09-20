@@ -2,7 +2,6 @@ package uz.nextqadam.bot.admin.impl;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +18,7 @@ import uz.nextqadam.bot.admin.SystemStats;
 import uz.nextqadam.bot.common.errorlog.ErrorLogEntity;
 import uz.nextqadam.bot.common.errorlog.ErrorLogRepository;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
+import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.goal.Goal;
 import uz.nextqadam.bot.goal.GoalRepository;
 import uz.nextqadam.bot.goal.Task;
@@ -33,7 +33,6 @@ public class AdminServiceImpl implements AdminService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminServiceImpl.class);
 
-    private static final ZoneId ZONE = ZoneId.of("Asia/Tashkent");
     private static final int SEARCH_LIMIT = 10;
     // Telegram flood-limitiga tegib qolmaslik uchun har xabar orasida kutish.
     private static final long BROADCAST_DELAY_MS = 50;
@@ -58,8 +57,8 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public SystemStats getSystemStats() {
-        LocalDate today = LocalDate.now(ZONE);
-        Instant dayStart = today.atStartOfDay(ZONE).toInstant();
+        LocalDate today = TimeUtil.todayInTashkent();
+        Instant dayStart = today.atStartOfDay(TimeUtil.TASHKENT_ZONE).toInstant();
         Instant dayEnd = dayStart.plus(1, ChronoUnit.DAYS);
         Instant last24h = Instant.now().minus(24, ChronoUnit.HOURS);
 

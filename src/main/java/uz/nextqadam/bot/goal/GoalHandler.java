@@ -22,6 +22,7 @@ public class GoalHandler {
 
     private static final String TASK_DONE_CALLBACK_PREFIX = "TASK_DONE_";
     private static final String GOALS_NEXTSTEP_CALLBACK_PREFIX = "GOALS_NEXTSTEP_";
+    private static final String TYPING_ACTION = "typing";
     private static final int PROGRESS_BAR_BLOCKS = 10;
     private static final String ALL_TASKS_DONE_MESSAGE =
             "🎉 <b>Bugungi barcha vazifalar tugadi!</b>\n\nErtaga yangi qadam kutmoqda.";
@@ -100,6 +101,7 @@ public class GoalHandler {
             return;
         }
 
+        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         Goal goal = goalService.createGoalWithAiDecomposition(user.getId(), rawDescription);
 
         if (goal.getDescription() != null && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_FAILURE_MARKER)) {

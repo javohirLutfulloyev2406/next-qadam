@@ -33,6 +33,7 @@ public class PlanHandler {
 
     private static final String CHECKIN_TOGGLE_PREFIX = "CHECKIN_TOGGLE_";
     private static final String CHECKIN_CONFIRM_CALLBACK = "CHECKIN_CONFIRM";
+    private static final String TYPING_ACTION = "typing";
     private static final int PLAN_DAY_TASK_LIMIT = 15;
     private static final int MAX_TODAY_PRIORITIES = 3;
     private static final int IDEAS_LIST_LIMIT = 10;
@@ -171,6 +172,7 @@ public class PlanHandler {
             return;
         }
 
+        telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         BrainDumpSummary summary;
         try {
             summary = planService.processBrainDump(user.getId(), rawText);

@@ -1,7 +1,5 @@
 package uz.nextqadam.bot.user;
 
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
+import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.goal.GoalService;
 
 @Component
@@ -29,9 +28,6 @@ public class ProfileHandler {
             ToneType.HARD, "🔥 Qattiq",
             ToneType.HARDCORE, "⚡ Hardcore"
     );
-
-    private static final DateTimeFormatter CREATED_AT_FORMATTER =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy").withZone(ZoneOffset.UTC);
 
     // TODO: xuddi OnboardingHandler/GoalHandler'dagi kabi — in-memory xotira, instance qayta ishga
     // tushirilganda yo'qoladi, keyinchalik Redis/DB'ga ko'chirish kerak.
@@ -151,7 +147,7 @@ public class ProfileHandler {
                     String text = "👤 <b>" + user.getName() + "</b>\n\n"
                             + "🎭 Uslub: " + TONE_DISPLAY.get(user.getTonePreference()) + "\n"
                             + "🌍 Vaqt zonasi: " + timezone + "\n"
-                            + "📅 A'zo bo'lgan: " + CREATED_AT_FORMATTER.format(user.getCreatedAt()) + "\n"
+                            + "📅 A'zo bo'lgan: " + TimeUtil.formatDateOnly(user.getCreatedAt()) + "\n"
                             + "🎯 Faol maqsadlar: " + activeGoalsCount + "\n\n"
                             + "Nimani o'zgartirmoqchisiz?";
 

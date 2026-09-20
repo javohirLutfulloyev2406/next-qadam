@@ -1,7 +1,5 @@
 package uz.nextqadam.bot.admin;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +15,7 @@ import uz.nextqadam.bot.common.HtmlEscaper;
 import uz.nextqadam.bot.common.errorlog.ErrorLogEntity;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
+import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.user.UserRepository.UserSummaryProjection;
 
 @Component
@@ -32,10 +31,6 @@ public class AdminHandler {
 
     private static final int RECENT_ERRORS_LIMIT = 10;
     private static final int ERROR_MESSAGE_PREVIEW_LENGTH = 100;
-    private static final ZoneId ZONE = ZoneId.of("Asia/Tashkent");
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy").withZone(ZONE);
-    private static final DateTimeFormatter DATE_TIME_FORMATTER =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm").withZone(ZONE);
 
     // Xuddi boshqa handler'lardagi kabi — in-memory xotira, instance qayta ishga tushirilganda yo'qoladi.
     private final Map<Long, AdminStage> stageByChatId = new ConcurrentHashMap<>();
@@ -236,7 +231,7 @@ public class AdminHandler {
     private String formatUserSummary(UserSummaryProjection user) {
         String name = user.getName() != null ? HtmlEscaper.escape(user.getName()) : "(ismsiz)";
         return "%s — %s — %s — %s".formatted(name, user.getTelegramId(), user.getTonePreference(),
-                DATE_FORMATTER.format(user.getCreatedAt()));
+                TimeUtil.formatDateOnly(user.getCreatedAt()));
     }
 
     private String formatErrors(List<ErrorLogEntity> errors) {
@@ -248,7 +243,7 @@ public class AdminHandler {
         for (ErrorLogEntity error : errors) {
             text.append("⚠️ ").append(error.getSourceModule()).append(" — ").append(error.getExceptionType()).append("\n")
                     .append(HtmlEscaper.escape(truncate(error.getMessage(), ERROR_MESSAGE_PREVIEW_LENGTH))).append("\n")
-                    .append(DATE_TIME_FORMATTER.format(error.getCreatedAt())).append("\n\n");
+                    .append(TimeUtil.formatForDisplay(error.getCreatedAt())).append("\n\n");
         }
         return text.toString().trim();
     }

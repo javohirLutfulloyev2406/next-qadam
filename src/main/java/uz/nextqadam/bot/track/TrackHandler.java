@@ -15,7 +15,9 @@ import uz.nextqadam.bot.ai.dto.GoalDriftResult;
 import uz.nextqadam.bot.ai.dto.TaskClassification;
 import uz.nextqadam.bot.ai.dto.WeeklyRetrospective;
 import uz.nextqadam.bot.common.HtmlEscaper;
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.goal.GoalHandler;
@@ -28,7 +30,6 @@ import uz.nextqadam.bot.user.UserService;
 public class TrackHandler {
 
     private static final String TYPING_ACTION = "typing";
-    private static final String NOT_REGISTERED_MESSAGE = "Avval /start orqali ro'yxatdan o'ting.";
     private static final String DRIFT_UPDATE_GOAL_CALLBACK = "DRIFT_UPDATE_GOAL";
     private static final String DRIFT_DISMISS_CALLBACK = "DRIFT_DISMISS";
     private static final int DRIFT_THRESHOLD = 50;
@@ -44,10 +45,12 @@ public class TrackHandler {
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
     private final MessageTemplateService messageTemplateService;
+    private final LocalizationService localizationService;
 
     public TrackHandler(TrackService trackService, UserService userService, GoalHandler goalHandler,
                          TaskRepository taskRepository, KeyboardService keyboardService,
-                         TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService) {
+                         TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService,
+                         LocalizationService localizationService) {
         this.trackService = trackService;
         this.userService = userService;
         this.goalHandler = goalHandler;
@@ -55,6 +58,7 @@ public class TrackHandler {
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
         this.messageTemplateService = messageTemplateService;
+        this.localizationService = localizationService;
     }
 
     public boolean isAwaitingEveningCheckinText(Long chatId) {
@@ -72,10 +76,8 @@ public class TrackHandler {
     public void handleEveningCheckinCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         stageByChatId.put(chatId, TrackStage.AWAITING_EVENING_CHECKIN_TEXT);
-        telegramExecutor.sendMessage(chatId,
-                "🌙 <b>Kun qanday o'tdi?</b>\n\n"
-                        + "Erkin yozing — nima qildingiz, nima qolib ketdi, sabablarini ham aytishingiz "
-                        + "mumkin. Men tushunib, hisobga olaman.");
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "track.evening.prompt"));
     }
 
     public void handleEveningCheckinText(Update update) {
@@ -86,20 +88,20 @@ public class TrackHandler {
 
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
-                messageTemplateService.typingPlaceholder(user.getTonePreference()));
+                messageTemplateService.typingPlaceholder(user.getLanguage(), user.getTonePreference()));
         EveningCheckinResult result = trackService.processEveningCheckin(user.getId(), rawText);
 
         if (result == null) {
-            showResult(chatId, placeholderMessageId, "Rahmat, qayd etib qo'ydim 🙂");
+            showResult(chatId, placeholderMessageId, localizationService.get(user.getLanguage(), "track.evening.ack"));
             return;
         }
 
-        showResult(chatId, placeholderMessageId, formatEveningCheckinResult(result));
+        showResult(chatId, placeholderMessageId, formatEveningCheckinResult(result, user.getLanguage()));
     }
 
     /**
@@ -118,14 +120,16 @@ public class TrackHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         WeeklyRetrospective retrospective = trackService.generateWeeklyRetrospective(user.getId());
-        String text = "📊 <b>Haftalik xulosa</b>\n\n" + HtmlEscaper.escape(retrospective.narrative())
-                + "\n\n💡 <b>Keyingi hafta uchun:</b> " + HtmlEscaper.escape(retrospective.recommendation());
+        String text = localizationService.get(user.getLanguage(), "track.retro.title") + "\n\n"
+                + HtmlEscaper.escape(retrospective.narrative()) + "\n\n"
+                + localizationService.get(user.getLanguage(), "track.retro.next_week",
+                        HtmlEscaper.escape(retrospective.recommendation()));
         telegramExecutor.sendMessage(chatId, text);
     }
 
@@ -141,17 +145,17 @@ public class TrackHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         telegramExecutor.sendChatAction(chatId, TYPING_ACTION);
         GoalDriftResult drift = trackService.checkGoalDrift(user.getId());
         if (drift.matchScore() < DRIFT_THRESHOLD) {
-            sendDriftWarning(chatId, drift);
+            sendDriftWarning(chatId, drift, user.getLanguage());
         } else {
             telegramExecutor.sendMessage(chatId,
-                    "✅ Yo'nalishingiz to'g'ri, " + drift.matchScore() + "/100 moslik.");
+                    localizationService.get(user.getLanguage(), "track.drift.on_track", drift.matchScore()));
         }
     }
 
@@ -159,9 +163,9 @@ public class TrackHandler {
      * RetrospectiveScheduler tomonidan ishlatiladi — faqat moslik past bo'lsa ogohlantirish yuboradi,
      * aks holda jim turadi (haftalik xulosadan tashqari qo'shimcha xabar yuborilmaydi).
      */
-    public void sendDriftWarningIfBelowThreshold(Long chatId, GoalDriftResult drift) {
+    public void sendDriftWarningIfBelowThreshold(Long chatId, GoalDriftResult drift, Language language) {
         if (drift.matchScore() < DRIFT_THRESHOLD) {
-            sendDriftWarning(chatId, drift);
+            sendDriftWarning(chatId, drift, language);
         }
     }
 
@@ -169,29 +173,32 @@ public class TrackHandler {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
         Integer messageId = callbackQuery.getMessage().getMessageId();
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
 
         goalHandler.beginGoalDescriptionFlow(chatId);
         telegramExecutor.editMessageReplyMarkup(chatId, messageId, InlineKeyboardMarkup.builder().keyboard(List.of()).build());
-        telegramExecutor.sendMessage(chatId, "Yangi yo'nalishingizni yozing — /newgoal orqali qaytadan boshlaymiz 🎯");
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "track.drift.update_prompt"));
     }
 
     public void handleDriftDismissCallback(Update update) {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
         Integer messageId = callbackQuery.getMessage().getMessageId();
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
 
-        telegramExecutor.editMessageText(chatId, messageId, "Tushunarli, davom etamiz 👍");
+        telegramExecutor.editMessageText(chatId, messageId, localizationService.get(language, "track.drift.dismiss_ack"));
         telegramExecutor.editMessageReplyMarkup(chatId, messageId, InlineKeyboardMarkup.builder().keyboard(List.of()).build());
     }
 
-    private void sendDriftWarning(Long chatId, GoalDriftResult drift) {
-        String text = "🧭 <b>Bir daqiqa to'xtaylik</b>\n\n" + HtmlEscaper.escape(drift.explanation())
-                + "\n\nYo'nalishni qayta ko'rib chiqishni xohlaysizmi?";
-        telegramExecutor.sendMessageWithKeyboard(chatId, text, keyboardService.buildGoalDriftKeyboard());
+    private void sendDriftWarning(Long chatId, GoalDriftResult drift, Language language) {
+        String text = localizationService.get(language, "track.drift.warning.title") + "\n\n"
+                + HtmlEscaper.escape(drift.explanation())
+                + localizationService.get(language, "track.drift.warning.footer");
+        telegramExecutor.sendMessageWithKeyboard(chatId, text, keyboardService.buildGoalDriftKeyboard(language));
     }
 
-    private String formatEveningCheckinResult(EveningCheckinResult result) {
-        StringBuilder sb = new StringBuilder("📋 <b>Bugungi natija</b>\n\n");
+    private String formatEveningCheckinResult(EveningCheckinResult result, Language language) {
+        StringBuilder sb = new StringBuilder(localizationService.get(language, "track.evening.result.title")).append("\n\n");
         for (TaskClassification classification : result.classifications()) {
             String title = taskRepository.findById(classification.taskId()).map(Task::getTitle).orElse("?");
             if (classification.done()) {
@@ -206,7 +213,7 @@ public class TrackHandler {
             sb.append("\n💭 ").append(HtmlEscaper.escape(result.overallMood())).append("\n");
         }
 
-        sb.append("\nErtaga yangi imkoniyat 🌅");
+        sb.append(localizationService.get(language, "track.evening.result.footer"));
         return sb.toString();
     }
 

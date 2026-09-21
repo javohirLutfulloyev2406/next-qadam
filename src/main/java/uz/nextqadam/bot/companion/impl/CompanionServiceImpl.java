@@ -70,7 +70,7 @@ public class CompanionServiceImpl implements CompanionService {
 
         try {
             String systemPrompt = promptBuilder.buildFreeChatSystemPrompt(user.getTonePreference(), memoryContext,
-                    recentGoalsSummary);
+                    recentGoalsSummary, user.getLanguage());
             return aiClient.completeText(systemPrompt, userMessage);
         } catch (AiClientException e) {
             log.warn("Erkin suhbat javobini olishda xatolik. userId={}", userId, e);
@@ -94,7 +94,7 @@ public class CompanionServiceImpl implements CompanionService {
 
         try {
             String systemPrompt = promptBuilder.buildMotivationPrompt(user.getTonePreference(), lastCompletedTask,
-                    activeGoalTitle, completedTaskCount);
+                    activeGoalTitle, completedTaskCount, user.getLanguage());
             return aiClient.completeText(systemPrompt, "Menga motivatsion xabar yoz.");
         } catch (AiClientException e) {
             log.warn("Motivatsion xabar olishda xatolik. userId={}", userId, e);
@@ -115,7 +115,7 @@ public class CompanionServiceImpl implements CompanionService {
 
         try {
             String systemPrompt = promptBuilder.buildSosPrompt(user.getTonePreference(), currentTask.getTitle(),
-                    estimatedMinutes);
+                    estimatedMinutes, user.getLanguage());
             return aiClient.completeText(systemPrompt, "Bu vazifani 5 daqiqalik mikro-qadamga qisqartir.");
         } catch (AiClientException e) {
             log.warn("SOS mikro-qadam olishda xatolik. userId={}", userId, e);

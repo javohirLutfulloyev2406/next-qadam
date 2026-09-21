@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.exception.NextQadamException;
 import uz.nextqadam.bot.user.User;
@@ -36,6 +37,16 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User createUserWithLanguage(Long telegramId, Language language) {
+        User user = User.builder()
+                .telegramId(telegramId)
+                .tonePreference(ToneType.NORMAL)
+                .language(language)
+                .build();
+        return userRepository.save(user);
+    }
+
+    @Override
     public User updateName(UUID userId, String name) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
@@ -56,6 +67,14 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
         user.setTimezone(timezone);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User updateLanguage(UUID userId, Language language) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
+        user.setLanguage(language);
         return userRepository.save(user);
     }
 }

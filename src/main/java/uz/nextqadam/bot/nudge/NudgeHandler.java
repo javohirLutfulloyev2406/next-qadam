@@ -8,7 +8,9 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -22,7 +24,6 @@ import uz.nextqadam.bot.user.UserService;
 public class NudgeHandler {
 
     private static final String TASK_SNOOZE_CALLBACK_PREFIX = "TASK_SNOOZE_";
-    private static final String NOT_REGISTERED_MESSAGE = "Avval /start orqali ro'yxatdan o'ting.";
 
     private final NudgeService nudgeService;
     private final PlanService planService;
@@ -31,10 +32,12 @@ public class NudgeHandler {
     private final KeyboardService keyboardService;
     private final MessageTemplateService messageTemplateService;
     private final TelegramExecutor telegramExecutor;
+    private final LocalizationService localizationService;
 
     public NudgeHandler(NudgeService nudgeService, PlanService planService, UserService userService,
                          GoalHandler goalHandler, KeyboardService keyboardService,
-                         MessageTemplateService messageTemplateService, TelegramExecutor telegramExecutor) {
+                         MessageTemplateService messageTemplateService, TelegramExecutor telegramExecutor,
+                         LocalizationService localizationService) {
         this.nudgeService = nudgeService;
         this.planService = planService;
         this.userService = userService;
@@ -42,6 +45,7 @@ public class NudgeHandler {
         this.keyboardService = keyboardService;
         this.messageTemplateService = messageTemplateService;
         this.telegramExecutor = telegramExecutor;
+        this.localizationService = localizationService;
     }
 
     public boolean isTaskSnoozeCallback(String callbackData) {
@@ -54,24 +58,26 @@ public class NudgeHandler {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         UUID taskId = UUID.fromString(callbackQuery.getData().substring(TASK_SNOOZE_CALLBACK_PREFIX.length()));
 
-        ToneType tone = userService.findByTelegramId(chatId).map(User::getTonePreference).orElse(ToneType.NORMAL);
+        User user = userService.findByTelegramId(chatId).orElse(null);
+        ToneType tone = user != null ? user.getTonePreference() : ToneType.NORMAL;
+        Language language = user != null ? user.getLanguage() : Language.UZ;
         SnoozeResult result = nudgeService.snoozeTask(taskId);
 
         if (!result.adaptiveShrinkApplied()) {
-            telegramExecutor.editMessageText(chatId, messageId, messageTemplateService.snoozeAck(tone));
+            telegramExecutor.editMessageText(chatId, messageId, messageTemplateService.snoozeAck(language, tone));
             telegramExecutor.editMessageReplyMarkup(chatId, messageId,
                     InlineKeyboardMarkup.builder().keyboard(List.of()).build());
             return;
         }
 
         telegramExecutor.editMessageText(chatId, messageId,
-                messageTemplateService.adaptiveShrinkNotice(tone, result.newEstimatedMinutes()));
+                messageTemplateService.adaptiveShrinkNotice(language, tone, result.newEstimatedMinutes()));
         telegramExecutor.editMessageReplyMarkup(chatId, messageId,
                 InlineKeyboardMarkup.builder().keyboard(List.of()).build());
 
         Task task = result.task();
-        telegramExecutor.sendMessageWithKeyboard(chatId, goalHandler.buildTaskCardMessage(task),
-                keyboardService.buildTaskActionKeyboard(task.getId()));
+        telegramExecutor.sendMessageWithKeyboard(chatId, goalHandler.buildTaskCardMessage(task, language),
+                keyboardService.buildTaskActionKeyboard(task.getId(), language));
     }
 
     /**
@@ -81,15 +87,15 @@ public class NudgeHandler {
     public void sendPriorityNudgeIfAny(User user) {
         planService.getTodayPriorityTasks(user.getId()).stream().findFirst().ifPresent(task ->
                 telegramExecutor.sendMessageWithKeyboard(user.getTelegramId(),
-                        messageTemplateService.reminderNudge(user.getTonePreference(), task.getTitle()),
-                        keyboardService.buildTaskActionKeyboard(task.getId())));
+                        messageTemplateService.reminderNudge(user.getLanguage(), user.getTonePreference(), task.getTitle()),
+                        keyboardService.buildTaskActionKeyboard(task.getId(), user.getLanguage())));
     }
 
     public void handleTestNudgeCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, NOT_REGISTERED_MESSAGE);
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
         sendPriorityNudgeIfAny(user);

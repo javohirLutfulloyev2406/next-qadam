@@ -1,6 +1,7 @@
 package uz.nextqadam.bot.user;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -8,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import uz.nextqadam.bot.common.StateCleanupService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 
@@ -76,36 +78,45 @@ public class ResetHandler {
 
     public void handleResetCommand(Update update) {
         Long chatId = chatIdOf(update);
-        if (userService.findByTelegramId(chatId).isEmpty()) {
+        Optional<User> user = userService.findByTelegramId(chatId);
+        if (user.isEmpty()) {
             telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
             return;
         }
-        telegramExecutor.sendMessageWithKeyboard(chatId, RESET_INTRO_TEXT, keyboardService.buildResetChoiceKeyboard());
+        telegramExecutor.sendMessageWithKeyboard(chatId, RESET_INTRO_TEXT,
+                keyboardService.buildResetChoiceKeyboard(user.get().getLanguage()));
     }
 
     public void handleSoftResetAskCallback(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
         telegramExecutor.sendMessageWithKeyboard(chatId,
                 "🔄 Rostdan ham boshidan boshlaymizmi? Joriy maqsad va vazifalaringiz yashiriladi.",
-                keyboardService.buildResetSoftConfirmKeyboard());
+                keyboardService.buildResetSoftConfirmKeyboard(language));
     }
 
     public void handleSoftResetConfirmCallback(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
-        userService.findByTelegramId(chatId).ifPresent(user -> resetService.softReset(user.getId()));
+        Language language = userService.findByTelegramId(chatId)
+                .map(user -> {
+                    resetService.softReset(user.getId());
+                    return user.getLanguage();
+                })
+                .orElse(Language.UZ);
         // Avval BARCHA modullardagi eski holatni tozalaymiz, so'ng OnboardingHandler o'zining
         // AWAITING_NAME holatini o'rnatadi — aks holda tartib teskari bo'lsa, clearAll shu zahoti
         // o'rnatilgan holatni ham o'chirib qo'yadi.
         stateCleanupService.clearAll(chatId);
-        onboardingHandler.restartOnboarding(chatId);
+        onboardingHandler.restartOnboarding(chatId, language);
     }
 
     public void handleHardDeleteAskCallback(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
         telegramExecutor.sendMessageWithKeyboard(chatId,
                 "🗑 <b>Diqqat:</b> bu amal QAYTARILMAYDI. Barcha ma'lumotingiz butunlay o'chadi. "
                         + "Rostdan ham davom etamizmi?",
-                keyboardService.buildResetHardConfirmKeyboard());
+                keyboardService.buildResetHardConfirmKeyboard(language));
     }
 
     public void handleHardDeleteConfirmCallback(Update update) {

@@ -71,7 +71,7 @@ public class PlanServiceImpl implements PlanService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
 
-        String systemPrompt = promptBuilder.buildBrainDumpPrompt(rawText);
+        String systemPrompt = promptBuilder.buildBrainDumpPrompt(rawText, user.getLanguage());
         String rawJson = aiClient.complete(systemPrompt, rawText);
         BrainDumpResult result = aiResponseParser.parseBrainDump(rawJson);
 

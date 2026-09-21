@@ -8,9 +8,11 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService.MemoryListOption;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
+import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserService;
 
 @Component
@@ -101,9 +103,10 @@ public class MemoryHandler {
     }
 
     private void askDeleteAllConfirmation(Long chatId) {
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
         telegramExecutor.sendMessageWithKeyboard(chatId,
                 "⚠️ Butun xotiramni o'chiray deysizmi? Bu amalni qaytarib bo'lmaydi.",
-                keyboardService.buildConfirmDeleteAllKeyboard());
+                keyboardService.buildConfirmDeleteAllKeyboard(language));
     }
 
     private void showMemoryList(Long chatId) {
@@ -126,7 +129,7 @@ public class MemoryHandler {
                     }
 
                     telegramExecutor.sendMessageWithKeyboard(chatId, text.toString(),
-                            keyboardService.buildMemoryListKeyboard(options));
+                            keyboardService.buildMemoryListKeyboard(options, user.getLanguage()));
                 },
                 () -> telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.")
         );

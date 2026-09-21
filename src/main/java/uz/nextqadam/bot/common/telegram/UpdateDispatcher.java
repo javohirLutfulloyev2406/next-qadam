@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import uz.nextqadam.bot.admin.AdminHandler;
 import uz.nextqadam.bot.common.AdminAuthService;
 import uz.nextqadam.bot.common.BotCommand;
+import uz.nextqadam.bot.common.ButtonLabelResolver;
 import uz.nextqadam.bot.common.errorlog.ErrorNotificationService;
 import uz.nextqadam.bot.companion.CompanionHandler;
 import uz.nextqadam.bot.goal.GoalHandler;
@@ -41,12 +42,14 @@ public class UpdateDispatcher {
     private final AdminHandler adminHandler;
     private final AdminAuthService adminAuthService;
     private final ResetHandler resetHandler;
+    private final ButtonLabelResolver buttonLabelResolver;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
                              CompanionHandler companionHandler, TrackHandler trackHandler, NudgeHandler nudgeHandler,
                              ErrorNotificationService errorNotificationService, AdminHandler adminHandler,
-                             AdminAuthService adminAuthService, ResetHandler resetHandler) {
+                             AdminAuthService adminAuthService, ResetHandler resetHandler,
+                             ButtonLabelResolver buttonLabelResolver) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
@@ -59,6 +62,7 @@ public class UpdateDispatcher {
         this.adminHandler = adminHandler;
         this.adminAuthService = adminAuthService;
         this.resetHandler = resetHandler;
+        this.buttonLabelResolver = buttonLabelResolver;
     }
 
     public void dispatch(Update update) {
@@ -81,7 +85,7 @@ public class UpdateDispatcher {
 
         Optional<BotCommand> command = (text != null && text.startsWith("/"))
                 ? BotCommand.fromText(text)
-                : BotCommand.fromButtonLabel(text);
+                : buttonLabelResolver.resolve(text);
         if (command.isPresent()) {
             switch (command.get()) {
                 case START -> onboardingHandler.handleStart(update);
@@ -91,6 +95,7 @@ public class UpdateDispatcher {
                 case DONE -> goalHandler.handleDoneCommand(update);
                 case GOALS -> goalHandler.handleGoalsCommand(update);
                 case PROFILE -> profileHandler.handleProfileCommand(update);
+                case LANGUAGE -> profileHandler.handleLanguageCommand(update);
                 case MEMORY -> memoryHandler.handleMemoryCommand(update);
                 case FORGET -> memoryHandler.handleForgetCommand(update);
                 case PLAN_DAY -> planHandler.handlePlanDayCommand(update);
@@ -202,6 +207,11 @@ public class UpdateDispatcher {
             return;
         }
 
+        if (onboardingHandler.isLanguageCallback(data)) {
+            onboardingHandler.handleLanguageSelection(update);
+            return;
+        }
+
         if (onboardingHandler.isToneCallback(data)) {
             if (!onboardingHandler.isAwaitingTone(chatId)) {
                 // stageByChatId in-memory xotira — instance qayta ishga tushganda yo'qoladi (pastdagi TODO'ga qarang).
@@ -233,6 +243,16 @@ public class UpdateDispatcher {
 
         if (profileHandler.isProfileToneCallback(data)) {
             profileHandler.handleToneCallback(update);
+            return;
+        }
+
+        if (profileHandler.isLanguageEntryCallback(data)) {
+            profileHandler.handleLanguageEntryCallback(update);
+            return;
+        }
+
+        if (profileHandler.isProfileLanguageCallback(data)) {
+            profileHandler.handleProfileLanguageSelection(update);
             return;
         }
 

@@ -8,7 +8,9 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.enums.ToneType;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -16,23 +18,26 @@ import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 @Component
 public class OnboardingHandler {
 
+    private static final String LANGUAGE_CALLBACK_PREFIX = "LANG_";
     private static final String TONE_CALLBACK_PREFIX = "ONBOARDING_TONE_";
 
     private final UserService userService;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
     private final MessageTemplateService messageTemplateService;
+    private final LocalizationService localizationService;
 
     // TODO: bu holat xotirasi hozircha in-memory Map orqali saqlanmoqda (bir nechta instance/qayta ishga tushirishda
     // yo'qoladi) — keyinchalik Redis yoki DB (masalan alohida "onboarding_state" jadvali) ga ko'chirish kerak.
     private final Map<Long, OnboardingStage> stageByChatId = new ConcurrentHashMap<>();
 
     public OnboardingHandler(UserService userService, KeyboardService keyboardService, TelegramExecutor telegramExecutor,
-                              MessageTemplateService messageTemplateService) {
+                              MessageTemplateService messageTemplateService, LocalizationService localizationService) {
         this.userService = userService;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
         this.messageTemplateService = messageTemplateService;
+        this.localizationService = localizationService;
     }
 
     public boolean isAwaitingName(Long chatId) {
@@ -43,6 +48,10 @@ public class OnboardingHandler {
         return stageByChatId.get(chatId) == OnboardingStage.AWAITING_TONE;
     }
 
+    public boolean isLanguageCallback(String callbackData) {
+        return callbackData != null && callbackData.startsWith(LANGUAGE_CALLBACK_PREFIX);
+    }
+
     public boolean isToneCallback(String callbackData) {
         return callbackData != null && callbackData.startsWith(TONE_CALLBACK_PREFIX);
     }
@@ -51,11 +60,13 @@ public class OnboardingHandler {
      * ResetHandler.softReset oqimidan keyin chaqiriladi — foydalanuvchini xuddi /start birinchi
      * marta bosilgandek qaytadan ism so'rash bosqichiga qaytaradi. handleStart'dagi yangi
      * foydalanuvchi oqimidan farqi shu — User qatorining o'zi allaqachon mavjud (faqat bo'shatilgan),
-     * shu sababli handleName endi createUser emas, updateName chaqiradi.
+     * shu sababli handleName endi createUser emas, updateName chaqiradi. Til tanlovi soft reset'da
+     * o'zgarmaydi (ResetServiceImpl.softReset language'ga tegmaydi), shu sababli bu yerda til qayta
+     * so'ralmaydi — chaqiruvchi mavjud language'ni beradi.
      */
-    public void restartOnboarding(Long chatId) {
+    public void restartOnboarding(Long chatId, Language language) {
         stageByChatId.put(chatId, OnboardingStage.AWAITING_NAME);
-        telegramExecutor.sendMessage(chatId, "✅ Tayyor — hammasi tozalandi. Qaytadan tanishaylik. Ismingiz nima?");
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "onboarding.restart"));
     }
 
     /**
@@ -73,18 +84,34 @@ public class OnboardingHandler {
         userService.findByTelegramId(chatId).ifPresentOrElse(
                 user -> {
                     stageByChatId.remove(chatId);
-                    telegramExecutor.sendMessageWithReplyKeyboard(chatId, "Yana xush kelibsiz, " + user.getName() + "! 👋",
-                            keyboardService.buildMainMenuKeyboard());
+                    telegramExecutor.sendMessageWithReplyKeyboard(chatId,
+                            localizationService.get(user.getLanguage(), "onboarding.welcome.back", user.getName()),
+                            keyboardService.buildMainMenuKeyboard(user.getLanguage()));
                 },
                 () -> {
-                    stageByChatId.put(chatId, OnboardingStage.AWAITING_NAME);
-                    telegramExecutor.sendMessage(chatId,
-                            "👋 Assalomu alaykum! Men NextQadam — katta orzularingni kichik, bajarilishi oson "
-                                    + "qadamlarga bo'lib beruvchi shaxsiy hamrohingman.\n\n"
-                                    + "Katta reja emas — bugungi bitta qadam. Shu tarzda oldinga siljiymiz. 🚀\n\n"
-                                    + "Avval tanishib olaylik — ismingiz nima?");
+                    stageByChatId.put(chatId, OnboardingStage.AWAITING_LANGUAGE);
+                    telegramExecutor.sendMessageWithKeyboard(chatId,
+                            localizationService.get(Language.UZ, "onboarding.ask.language"),
+                            keyboardService.buildLanguageChoiceKeyboard(LANGUAGE_CALLBACK_PREFIX));
                 }
         );
+    }
+
+    public void handleLanguageSelection(Update update) {
+        CallbackQuery callbackQuery = update.getCallbackQuery();
+        Long chatId = callbackQuery.getMessage().getChatId();
+        String data = callbackQuery.getData();
+
+        Language language = Language.valueOf(data.substring(LANGUAGE_CALLBACK_PREFIX.length()));
+
+        User user = userService.findByTelegramId(chatId)
+                .orElseGet(() -> userService.createUserWithLanguage(chatId, language));
+        if (user.getLanguage() != language) {
+            user = userService.updateLanguage(user.getId(), language);
+        }
+
+        stageByChatId.put(chatId, OnboardingStage.AWAITING_NAME);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "onboarding.welcome.name"));
     }
 
     public void handleName(Update update) {
@@ -92,22 +119,18 @@ public class OnboardingHandler {
         Long chatId = message.getChatId();
         String name = message.getText().trim();
 
-        // softReset'dan keyingi qayta-onboarding oqimida User qatori allaqachon mavjud (faqat
-        // bo'shatilgan) — bunday holatda createUser telegramId unique cheklovini buzadi, shu sababli
-        // mavjud bo'lsa yangilaymiz, bo'lmasa (haqiqiy birinchi /start) yangi qator yaratamiz.
-        userService.findByTelegramId(chatId).ifPresentOrElse(
-                existingUser -> userService.updateName(existingUser.getId(), name),
-                () -> userService.createUser(chatId, name)
-        );
+        // softReset'dan keyingi qayta-onboarding oqimida yoki til tanlash bosqichidan keyin User
+        // qatori allaqachon mavjud (faqat bo'shatilgan yoki name=null) — bunday holatda createUser
+        // telegramId unique cheklovini buzadi, shu sababli mavjud bo'lsa yangilaymiz, bo'lmasa
+        // (nazariy jihatdan bo'lmasligi kerak, lekin himoya sifatida) yangi qator yaratamiz.
+        User user = userService.findByTelegramId(chatId)
+                .map(existingUser -> userService.updateName(existingUser.getId(), name))
+                .orElseGet(() -> userService.createUser(chatId, name));
         stageByChatId.put(chatId, OnboardingStage.AWAITING_TONE);
 
         telegramExecutor.sendMessageWithKeyboard(chatId,
-                "Tanishganimdan xursandman, " + name + "! Endi menga qaysi uslubda gaplashishimni tanlang:\n\n"
-                        + "🌱 Yumshoq — iliq va tushunuvchan ohangda qo'llab-quvvatlayman\n"
-                        + "📋 Oddiy — sodda va aniq, ortiqcha so'zlarsiz gaplashaman\n"
-                        + "🔥 Qattiq — tik va talabchan, gapni aylantirmayman\n"
-                        + "⚡ Hardcore — hech narsani yumshatmayman, to'g'ridan-to'g'ri aytaman",
-                keyboardService.buildToneSelectionKeyboard(TONE_CALLBACK_PREFIX));
+                localizationService.get(user.getLanguage(), "onboarding.ask.tone", name),
+                keyboardService.buildToneSelectionKeyboard(TONE_CALLBACK_PREFIX, user.getLanguage()));
     }
 
     public void handleToneSelection(Update update) {
@@ -121,16 +144,16 @@ public class OnboardingHandler {
             userService.updateTonePreference(user.getId(), tone);
             stageByChatId.remove(chatId);
             telegramExecutor.sendMessageWithReplyKeyboard(chatId,
-                    messageTemplateService.welcomeAfterTone(tone, user.getName()),
-                    keyboardService.buildMainMenuKeyboard());
+                    messageTemplateService.welcomeAfterTone(user.getLanguage(), tone, user.getName()),
+                    keyboardService.buildMainMenuKeyboard(user.getLanguage()));
             telegramExecutor.sendMessageWithKeyboard(chatId,
-                    "📖 Aytgancha, botdan to'liq foydalanish uchun qisqa qo'llanma tayyorladik — xohlasangiz "
-                            + "ko'rib chiqing:",
-                    keyboardService.buildGuideLinkKeyboard());
+                    localizationService.get(user.getLanguage(), "onboarding.guide.prompt"),
+                    keyboardService.buildGuideLinkKeyboard(user.getLanguage()));
         });
     }
 
     private enum OnboardingStage {
+        AWAITING_LANGUAGE,
         AWAITING_NAME,
         AWAITING_TONE
     }

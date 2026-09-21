@@ -28,9 +28,12 @@ import uz.nextqadam.bot.goal.GoalRepository;
 import uz.nextqadam.bot.goal.GoalService;
 import uz.nextqadam.bot.goal.Task;
 import uz.nextqadam.bot.goal.TaskRepository;
+import uz.nextqadam.bot.common.enums.Language;
+import uz.nextqadam.bot.common.exception.NextQadamException;
 import uz.nextqadam.bot.track.CheckIn;
 import uz.nextqadam.bot.track.CheckInRepository;
 import uz.nextqadam.bot.track.TrackService;
+import uz.nextqadam.bot.user.User;
 import uz.nextqadam.bot.user.UserRepository;
 
 @Service
@@ -79,9 +82,10 @@ public class TrackServiceImpl implements TrackService {
                 .map(task -> new TaskSummaryForPrompt(task.getId(), task.getTitle()))
                 .toList();
 
+        Language language = languageOf(userId);
         EveningCheckinResult result;
         try {
-            String prompt = promptBuilder.buildEveningCheckinPrompt(rawText, summaries);
+            String prompt = promptBuilder.buildEveningCheckinPrompt(rawText, summaries, language);
             String rawJson = aiClient.complete(prompt, rawText);
             result = aiResponseParser.parseEveningCheckin(rawJson);
         } catch (AiClientException | AiResponseParseException e) {
@@ -117,7 +121,8 @@ public class TrackServiceImpl implements TrackService {
         int done = completedTitles.size();
 
         try {
-            String prompt = promptBuilder.buildWeeklyRetrospectivePrompt(total, done, completedTitles, missedTitles);
+            String prompt = promptBuilder.buildWeeklyRetrospectivePrompt(total, done, completedTitles, missedTitles,
+                    languageOf(userId));
             String rawJson = aiClient.complete(prompt, "Haftalik xulosa yoz.");
             return aiResponseParser.parseWeeklyRetrospective(rawJson);
         } catch (AiClientException | AiResponseParseException e) {
@@ -143,7 +148,7 @@ public class TrackServiceImpl implements TrackService {
                 .toList();
 
         try {
-            String prompt = promptBuilder.buildGoalDriftPrompt(activeGoal.getTitle(), recentTaskTitles);
+            String prompt = promptBuilder.buildGoalDriftPrompt(activeGoal.getTitle(), recentTaskTitles, languageOf(userId));
             String rawJson = aiClient.complete(prompt, "Moslikni bahola.");
             return aiResponseParser.parseGoalDrift(rawJson);
         } catch (AiClientException | AiResponseParseException e) {
@@ -201,5 +206,11 @@ public class TrackServiceImpl implements TrackService {
 
     private Instant driftWindowStart() {
         return Instant.now().minus(DRIFT_WINDOW_DAYS, ChronoUnit.DAYS);
+    }
+
+    private Language languageOf(UUID userId) {
+        return userRepository.findById(userId)
+                .map(User::getLanguage)
+                .orElseThrow(() -> new NextQadamException("Foydalanuvchi topilmadi: " + userId));
     }
 }

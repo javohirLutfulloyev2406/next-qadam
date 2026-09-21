@@ -11,7 +11,9 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.user.User;
@@ -23,8 +25,6 @@ public class GoalHandler {
     private static final String TASK_DONE_CALLBACK_PREFIX = "TASK_DONE_";
     private static final String GOALS_NEXTSTEP_CALLBACK_PREFIX = "GOALS_NEXTSTEP_";
     private static final int PROGRESS_BAR_BLOCKS = 10;
-    private static final String ALL_TASKS_DONE_MESSAGE =
-            "🎉 <b>Bugungi barcha vazifalar tugadi!</b>\n\nErtaga yangi qadam kutmoqda.";
 
     // TODO: bu holat xotirasi hozircha in-memory Map orqali saqlanmoqda (bir nechta instance/qayta
     // tushirishda yo'qoladi) — keyinchalik Redis yoki DB (masalan alohida "conversation_state" jadvali) ga
@@ -38,10 +38,11 @@ public class GoalHandler {
     private final TelegramExecutor telegramExecutor;
     private final KeyboardService keyboardService;
     private final MessageTemplateService messageTemplateService;
+    private final LocalizationService localizationService;
 
     public GoalHandler(GoalService goalService, UserService userService, MilestoneRepository milestoneRepository,
                         TaskRepository taskRepository, TelegramExecutor telegramExecutor, KeyboardService keyboardService,
-                        MessageTemplateService messageTemplateService) {
+                        MessageTemplateService messageTemplateService, LocalizationService localizationService) {
         this.goalService = goalService;
         this.userService = userService;
         this.milestoneRepository = milestoneRepository;
@@ -49,6 +50,7 @@ public class GoalHandler {
         this.telegramExecutor = telegramExecutor;
         this.keyboardService = keyboardService;
         this.messageTemplateService = messageTemplateService;
+        this.localizationService = localizationService;
     }
 
     public boolean isAwaitingGoalDescription(Long chatId) {
@@ -74,9 +76,8 @@ public class GoalHandler {
     public void handleNewGoalCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         beginGoalDescriptionFlow(chatId);
-        telegramExecutor.sendMessage(chatId,
-                "Katta maqsadingizni bir necha jumla bilan yozing "
-                        + "(masalan: \"6 oyda ingliz tilimni yaxshi darajaga olib chiqmoqchiman\")");
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "goal.new.prompt"));
     }
 
     /**
@@ -96,28 +97,27 @@ public class GoalHandler {
         User user = userService.findByTelegramId(chatId).orElse(null);
         stageByChatId.remove(chatId);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
-                messageTemplateService.typingPlaceholder(user.getTonePreference()));
+                messageTemplateService.typingPlaceholder(user.getLanguage(), user.getTonePreference()));
 
         Goal goal = goalService.createGoalWithAiDecomposition(user.getId(), rawDescription);
 
         if (goal.getDescription() != null && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_FAILURE_MARKER)) {
             showResult(chatId, placeholderMessageId,
-                    "🎯 Maqsadingiz saqlandi, lekin uni bosqichlarga bo'lishda xatolik yuz berdi. "
-                            + "Birozdan so'ng /newgoal orqali qayta urinib ko'ring.");
+                    localizationService.get(user.getLanguage(), "goal.decomposition.failed"));
             return;
         }
 
-        String intro = messageTemplateService.goalDecompositionIntro(user.getTonePreference());
-        showResult(chatId, placeholderMessageId, intro + "\n\n" + formatGoalSummary(goal));
+        String intro = messageTemplateService.goalDecompositionIntro(user.getLanguage(), user.getTonePreference());
+        showResult(chatId, placeholderMessageId, intro + "\n\n" + formatGoalSummary(goal, user.getLanguage()));
 
         goalService.getNextStep(user.getId())
-                .ifPresent(task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task),
-                        keyboardService.buildTaskActionKeyboard(task.getId())));
+                .ifPresent(task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task, user.getLanguage()),
+                        keyboardService.buildTaskActionKeyboard(task.getId(), user.getLanguage())));
     }
 
     /**
@@ -137,16 +137,16 @@ public class GoalHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         goalService.getNextStep(user.getId()).ifPresentOrElse(
-                task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task),
-                        keyboardService.buildTaskActionKeyboard(task.getId())),
+                task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task, user.getLanguage()),
+                        keyboardService.buildTaskActionKeyboard(task.getId(), user.getLanguage())),
                 () -> telegramExecutor.sendMessageWithReplyKeyboard(chatId,
-                        messageTemplateService.noPendingTask(user.getTonePreference()),
-                        keyboardService.buildMainMenuKeyboard())
+                        messageTemplateService.noPendingTask(user.getLanguage(), user.getTonePreference()),
+                        keyboardService.buildMainMenuKeyboard(user.getLanguage()))
         );
     }
 
@@ -154,7 +154,7 @@ public class GoalHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
@@ -162,13 +162,13 @@ public class GoalHandler {
                 task -> {
                     goalService.markTaskDone(task.getId());
                     telegramExecutor.sendMessageWithReplyKeyboard(chatId,
-                            messageTemplateService.taskDoneCongrats(user.getTonePreference(), task.getTitle()),
-                            keyboardService.buildMainMenuKeyboard());
-                    sendNextStepOrCelebration(chatId, user.getId());
+                            messageTemplateService.taskDoneCongrats(user.getLanguage(), user.getTonePreference(), task.getTitle()),
+                            keyboardService.buildMainMenuKeyboard(user.getLanguage()));
+                    sendNextStepOrCelebration(chatId, user.getId(), user.getLanguage());
                 },
                 () -> telegramExecutor.sendMessageWithReplyKeyboard(chatId,
-                        messageTemplateService.noPendingTask(user.getTonePreference()),
-                        keyboardService.buildMainMenuKeyboard())
+                        messageTemplateService.noPendingTask(user.getLanguage(), user.getTonePreference()),
+                        keyboardService.buildMainMenuKeyboard(user.getLanguage()))
         );
     }
 
@@ -180,38 +180,41 @@ public class GoalHandler {
 
         Task task = goalService.markTaskDone(taskId);
 
-        telegramExecutor.editMessageText(chatId, messageId, "✅ <s>" + task.getTitle() + "</s>\n\nAjoyib ish!");
+        User user = userService.findByTelegramId(chatId).orElse(null);
+        Language language = user != null ? user.getLanguage() : Language.UZ;
+
+        telegramExecutor.editMessageText(chatId, messageId,
+                localizationService.get(language, "goal.task.done.callback", task.getTitle()));
         telegramExecutor.editMessageReplyMarkup(chatId, messageId,
                 InlineKeyboardMarkup.builder().keyboard(List.of()).build());
 
-        User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
             return;
         }
-        sendNextStepOrCelebration(chatId, user.getId());
+        sendNextStepOrCelebration(chatId, user.getId(), language);
     }
 
     public void handleGoalsCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         Map<Goal, GoalService.ProgressStats> goalsWithProgress = goalService.getGoalsWithProgress(user.getId());
         if (goalsWithProgress.isEmpty()) {
             telegramExecutor.sendMessageWithReplyKeyboard(chatId,
-                    "Hozircha faol maqsadingiz yo'q. /newgoal orqali birinchisini qo'shing 🎯",
-                    keyboardService.buildMainMenuKeyboard());
+                    localizationService.get(user.getLanguage(), "goal.list.empty"),
+                    keyboardService.buildMainMenuKeyboard(user.getLanguage()));
             return;
         }
 
         for (Map.Entry<Goal, GoalService.ProgressStats> entry : goalsWithProgress.entrySet()) {
             Goal goal = entry.getKey();
             GoalService.ProgressStats stats = entry.getValue();
-            telegramExecutor.sendMessageWithKeyboard(chatId, formatGoalProgressBlock(goal, stats),
-                    keyboardService.buildGoalsNextStepKeyboard(goal.getId()));
+            telegramExecutor.sendMessageWithKeyboard(chatId, formatGoalProgressBlock(goal, stats, user.getLanguage()),
+                    keyboardService.buildGoalsNextStepKeyboard(goal.getId(), user.getLanguage()));
         }
     }
 
@@ -219,19 +222,20 @@ public class GoalHandler {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
         UUID goalId = UUID.fromString(callbackQuery.getData().substring(GOALS_NEXTSTEP_CALLBACK_PREFIX.length()));
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
 
         goalService.getNextStepForGoal(goalId).ifPresentOrElse(
-                task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task),
-                        keyboardService.buildTaskActionKeyboard(task.getId())),
-                () -> telegramExecutor.sendMessage(chatId, "Bu maqsad bo'yicha hozircha faol vazifa yo'q.")
+                task -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(task, language),
+                        keyboardService.buildTaskActionKeyboard(task.getId(), language)),
+                () -> telegramExecutor.sendMessage(chatId, localizationService.get(language, "goal.list.no_next_step"))
         );
     }
 
-    private void sendNextStepOrCelebration(Long chatId, UUID userId) {
+    private void sendNextStepOrCelebration(Long chatId, UUID userId, Language language) {
         goalService.getNextStep(userId).ifPresentOrElse(
-                nextTask -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(nextTask),
-                        keyboardService.buildTaskActionKeyboard(nextTask.getId())),
-                () -> telegramExecutor.sendMessage(chatId, ALL_TASKS_DONE_MESSAGE)
+                nextTask -> telegramExecutor.sendMessageWithKeyboard(chatId, buildTaskCardMessage(nextTask, language),
+                        keyboardService.buildTaskActionKeyboard(nextTask.getId(), language)),
+                () -> telegramExecutor.sendMessage(chatId, localizationService.get(language, "goal.all_done"))
         );
     }
 
@@ -239,12 +243,12 @@ public class GoalHandler {
      * NudgeHandler kabi boshqa modullar ham (masalan adaptive-shrink'dan keyin qayta ko'rsatishda)
      * bir xil kartochka ko'rinishidan foydalanishi uchun public.
      */
-    public String buildTaskCardMessage(Task task) {
+    public String buildTaskCardMessage(Task task, Language language) {
         StringBuilder sb = new StringBuilder();
-        sb.append("📌 <b>Bugungi qadamingiz</b>\n\n");
+        sb.append(localizationService.get(language, "goal.task.card.title")).append("\n\n");
         sb.append(task.getTitle()).append("\n");
-        sb.append("⏱ Taxminan ").append(task.getEstimatedMinutes()).append(" daqiqa\n\n");
-        sb.append("Qaysi bosqichdan: ").append(milestoneTitleOf(task));
+        sb.append(localizationService.get(language, "goal.task.card.estimate", task.getEstimatedMinutes())).append("\n\n");
+        sb.append(localizationService.get(language, "goal.task.card.milestone", milestoneTitleOf(task)));
         return sb.toString();
     }
 
@@ -257,7 +261,7 @@ public class GoalHandler {
                 .orElse("");
     }
 
-    private String formatGoalSummary(Goal goal) {
+    private String formatGoalSummary(Goal goal, Language language) {
         List<Milestone> milestones = milestoneRepository.findAllByGoalId(goal.getId());
         List<Task> tasks = taskRepository.findAllByGoalId(goal.getId());
 
@@ -270,16 +274,16 @@ public class GoalHandler {
             sb.append(periodEmoji(milestone.getPeriod())).append(" ").append(milestone.getTitle())
                     .append(" — 0/").append(milestoneTaskCount).append("\n");
         }
-        sb.append("\n📊 Jami: ").append(milestones.size()).append(" bosqich, ").append(tasks.size()).append(" vazifa\n\n");
-        sb.append("Boshlaymiz! 👇");
+        sb.append("\n").append(localizationService.get(language, "goal.summary.stats", milestones.size(), tasks.size())).append("\n\n");
+        sb.append(localizationService.get(language, "goal.summary.start"));
         return sb.toString();
     }
 
-    private String formatGoalProgressBlock(Goal goal, GoalService.ProgressStats stats) {
+    private String formatGoalProgressBlock(Goal goal, GoalService.ProgressStats stats, Language language) {
         StringBuilder sb = new StringBuilder();
         sb.append("🎯 <b>").append(goal.getTitle()).append("</b>\n");
         sb.append(buildProgressBar(stats.percentComplete())).append(" ").append(stats.percentComplete()).append("%\n");
-        sb.append(stats.doneCount()).append("/").append(stats.totalCount()).append(" vazifa bajarildi");
+        sb.append(localizationService.get(language, "goal.progress.tasks_done", stats.doneCount(), stats.totalCount()));
         return sb.toString();
     }
 

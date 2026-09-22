@@ -27,6 +27,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Optional<User> findById(UUID userId) {
+        return userRepository.findById(userId);
+    }
+
+    @Override
     public User createUser(Long telegramId, String name) {
         User user = User.builder()
                 .telegramId(telegramId)

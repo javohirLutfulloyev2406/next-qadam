@@ -91,6 +91,13 @@ public interface KeyboardService {
     InlineKeyboardMarkup buildResetHardConfirmKeyboard(Language language);
 
     /**
+     * Admin qidiruv natijasidagi bitta foydalanuvchi uchun "To'liq faoliyatni ko'rish" tugmasi
+     * (callbackData "ADMIN_ACTIVITY_{userId}") — har bir natija o'zining alohida xabarida
+     * yuborilgani uchun, shu xabarga biriktiriladi.
+     */
+    InlineKeyboardMarkup buildUserActivityButton(UUID userId, Language language);
+
+    /**
      * Ertalabki check-in (/planday) uchun ko'p tanlovli klaviatura — har bir task uchun checkbox
      * tugmasi (callbackData "CHECKIN_TOGGLE_{taskId}") va oxirida "✅ Tasdiqlash (N/3)" tugmasi
      * (callbackData "CHECKIN_CONFIRM").

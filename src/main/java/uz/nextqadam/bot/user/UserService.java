@@ -10,6 +10,12 @@ public interface UserService {
 
     Optional<User> findByTelegramId(Long telegramId);
 
+    /**
+     * AdminHandler'ga kerak — qidiruv natijasidan keyingi kontekstli callback'larda (masalan
+     * faoliyat tarixini ko'rish) qo'lda faqat UUID mavjud bo'ladi, Telegram ID emas.
+     */
+    Optional<User> findById(UUID userId);
+
     User createUser(Long telegramId, String name);
 
     /**

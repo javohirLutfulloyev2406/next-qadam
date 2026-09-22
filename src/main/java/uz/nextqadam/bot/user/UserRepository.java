@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * bo'yicha qism moslik. Natija chaqiruvchi tomonda (AdminService) 10 tagacha cheklanadi.
      */
     @Query("""
-            SELECT u.telegramId as telegramId, u.name as name, u.tonePreference as tonePreference,
+            SELECT u.id as id, u.telegramId as telegramId, u.name as name, u.tonePreference as tonePreference,
                    u.createdAt as createdAt
             FROM User u
             WHERE LOWER(u.name) LIKE LOWER(CONCAT('%', :query, '%'))
@@ -33,6 +33,8 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     List<UserSummaryProjection> searchUsers(@Param("query") String query, Pageable pageable);
 
     interface UserSummaryProjection {
+        UUID getId();
+
         Long getTelegramId();
 
         String getName();

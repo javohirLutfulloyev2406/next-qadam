@@ -1,9 +1,11 @@
 package uz.nextqadam.bot.admin;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import uz.nextqadam.bot.common.errorlog.ErrorLogEntity;
-import uz.nextqadam.bot.user.UserRepository.UserSummaryProjection;
 
 public interface AdminService {
 
@@ -16,12 +18,27 @@ public interface AdminService {
     BroadcastResult broadcastMessage(String message);
 
     /**
-     * Ism yoki Telegram ID bo'yicha qidiruv, natija 10 tagacha cheklanadi.
+     * Ism yoki Telegram ID bo'yicha qidiruv, natija 10 tagacha cheklanadi. Har bir natija bilan
+     * birga so'nggi faollik ham (qo'shimcha so'rovsiz) qaytariladi.
      */
-    List<UserSummaryProjection> searchUsers(String query);
+    List<UserSearchResult> searchUsers(String query);
 
     List<ErrorLogEntity> getRecentErrors(int limit);
 
+    /**
+     * Bitta foydalanuvchining so'nggi 30 ta harakati, eng yangisi birinchi — admin "to'liq
+     * faoliyatni ko'rish" tugmasi orqali.
+     */
+    List<UserActivityLog> getUserActivity(UUID userId);
+
+    Optional<LastActivityInfo> getLastActivity(UUID userId);
+
     record BroadcastResult(int totalRecipients, int sentCount, int failedCount) {
+    }
+
+    record LastActivityInfo(Instant occurredAt, String actionDetail) {
+    }
+
+    record UserSearchResult(UUID id, String name, Long telegramId, Optional<LastActivityInfo> lastActivity) {
     }
 }

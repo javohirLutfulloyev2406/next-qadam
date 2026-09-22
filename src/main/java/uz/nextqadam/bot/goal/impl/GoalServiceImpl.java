@@ -93,7 +93,10 @@ public class GoalServiceImpl implements GoalService {
             memoryService.remember(userId, "so'nggi_maqsad", goal.getTitle(), 5);
         } catch (AiClientException | AiResponseParseException e) {
             log.error("Maqsadni AI orqali bosqichlarga bo'lishda xatolik yuz berdi. goalId={}", goal.getId(), e);
-            goal.setDescription(rawDescription + "\n\n" + AI_DECOMPOSITION_FAILURE_MARKER);
+            boolean transientFailure = e instanceof AiClientException aiClientException
+                    && aiClientException.isTransientFailure();
+            String marker = transientFailure ? AI_DECOMPOSITION_TRANSIENT_FAILURE_MARKER : AI_DECOMPOSITION_FAILURE_MARKER;
+            goal.setDescription(rawDescription + "\n\n" + marker);
             goal = goalRepository.save(goal);
         }
 

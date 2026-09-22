@@ -2,6 +2,7 @@ package uz.nextqadam.bot.admin;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
@@ -10,6 +11,8 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import uz.nextqadam.bot.admin.AdminService.BroadcastResult;
+import uz.nextqadam.bot.admin.AdminService.LastActivityInfo;
+import uz.nextqadam.bot.admin.AdminService.UserSearchResult;
 import uz.nextqadam.bot.common.AdminAuthService;
 import uz.nextqadam.bot.common.HtmlEscaper;
 import uz.nextqadam.bot.common.LocalizationService;
@@ -19,7 +22,6 @@ import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
 import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.user.User;
-import uz.nextqadam.bot.user.UserRepository.UserSummaryProjection;
 import uz.nextqadam.bot.user.UserService;
 
 @Component
@@ -32,6 +34,7 @@ public class AdminHandler {
     private static final String REFRESH_CALLBACK = "ADMIN_REFRESH";
     private static final String BROADCAST_CONFIRM_CALLBACK = "ADMIN_BROADCAST_CONFIRM";
     private static final String BROADCAST_CANCEL_CALLBACK = "ADMIN_BROADCAST_CANCEL";
+    private static final String ACTIVITY_CALLBACK_PREFIX = "ADMIN_ACTIVITY_";
 
     private static final int RECENT_ERRORS_LIMIT = 10;
     private static final int ERROR_MESSAGE_PREVIEW_LENGTH = 100;
@@ -84,6 +87,10 @@ public class AdminHandler {
 
     public boolean isBroadcastCancelCallback(String callbackData) {
         return BROADCAST_CANCEL_CALLBACK.equals(callbackData);
+    }
+
+    public boolean isActivityCallback(String callbackData) {
+        return callbackData != null && callbackData.startsWith(ACTIVITY_CALLBACK_PREFIX);
     }
 
     public boolean isAwaitingBroadcastText(Long chatId) {
@@ -204,17 +211,36 @@ public class AdminHandler {
 
         Language language = languageOf(chatId);
         stageByChatId.remove(chatId);
-        List<UserSummaryProjection> results = adminService.searchUsers(message.getText().trim());
+        List<UserSearchResult> results = adminService.searchUsers(message.getText().trim());
         if (results.isEmpty()) {
             telegramExecutor.sendMessage(chatId, localizationService.get(language, "admin.search.empty"));
             return;
         }
 
-        StringBuilder text = new StringBuilder(localizationService.get(language, "admin.search.title")).append("\n\n");
-        for (UserSummaryProjection user : results) {
-            text.append(formatUserSummary(user, language)).append("\n");
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "admin.search.title"));
+        // Telegram bitta xabarga bir nechta mustaqil inline keyboard biriktirishga ruxsat bermaydi —
+        // shu sababli har bir natija o'zining alohida xabarida, o'z tugmasi bilan yuboriladi.
+        for (UserSearchResult result : results) {
+            telegramExecutor.sendMessageWithKeyboard(chatId, formatUserSearchResult(result, language),
+                    keyboardService.buildUserActivityButton(result.id(), language));
         }
-        telegramExecutor.sendMessage(chatId, text.toString());
+    }
+
+    public void handleActivityCallback(Update update) {
+        CallbackQuery callbackQuery = update.getCallbackQuery();
+        Long chatId = callbackQuery.getMessage().getChatId();
+        if (!adminAuthService.isAdmin(chatId)) {
+            return;
+        }
+
+        Language language = languageOf(chatId);
+        UUID targetUserId = UUID.fromString(callbackQuery.getData().substring(ACTIVITY_CALLBACK_PREFIX.length()));
+        String name = userService.findById(targetUserId)
+                .map(user -> nameOrPlaceholder(user.getName(), language))
+                .orElse(localizationService.get(language, "admin.user_no_name"));
+
+        List<UserActivityLog> activity = adminService.getUserActivity(targetUserId);
+        telegramExecutor.sendMessage(chatId, formatUserActivity(name, activity, language));
     }
 
     public void handleErrorsCallback(Update update) {
@@ -236,12 +262,36 @@ public class AdminHandler {
                 stats.activeUsersToday(), stats.totalActiveGoals(), stats.tasksDoneToday(), stats.errorsLast24h());
     }
 
-    private String formatUserSummary(UserSummaryProjection user, Language language) {
-        String name = user.getName() != null
-                ? HtmlEscaper.escape(user.getName())
-                : localizationService.get(language, "admin.user_no_name");
-        return "%s — %s — %s — %s".formatted(name, user.getTelegramId(), user.getTonePreference(),
-                TimeUtil.formatDateOnly(user.getCreatedAt()));
+    private String formatUserSearchResult(UserSearchResult result, Language language) {
+        String name = nameOrPlaceholder(result.name(), language);
+        String header = localizationService.get(language, "admin.search.item", name, result.telegramId());
+        String activityLine = result.lastActivity()
+                .map(activity -> formatLastActivityLine(activity, language))
+                .orElseGet(() -> localizationService.get(language, "admin.search.item.no_activity"));
+        return header + "\n" + activityLine;
+    }
+
+    private String formatLastActivityLine(LastActivityInfo activity, Language language) {
+        return localizationService.get(language, "admin.search.item.last_activity",
+                TimeUtil.formatForDisplay(activity.occurredAt()), HtmlEscaper.escape(activity.actionDetail()));
+    }
+
+    private String formatUserActivity(String name, List<UserActivityLog> activity, Language language) {
+        if (activity.isEmpty()) {
+            return localizationService.get(language, "admin.activity.empty");
+        }
+
+        StringBuilder text = new StringBuilder(localizationService.get(language, "admin.activity.title", name))
+                .append("\n\n");
+        for (UserActivityLog entry : activity) {
+            text.append("🕐 ").append(TimeUtil.formatForDisplay(entry.getCreatedAt())).append(" — ")
+                    .append(HtmlEscaper.escape(entry.getActionDetail())).append("\n");
+        }
+        return text.toString().stripTrailing();
+    }
+
+    private String nameOrPlaceholder(String name, Language language) {
+        return name != null ? HtmlEscaper.escape(name) : localizationService.get(language, "admin.user_no_name");
     }
 
     private String formatErrors(List<ErrorLogEntity> errors, Language language) {

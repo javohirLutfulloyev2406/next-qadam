@@ -250,6 +250,14 @@ public class KeyboardServiceImpl implements KeyboardService {
         return InlineKeyboardMarkup.builder().keyboard(rows).build();
     }
 
+    @Override
+    public InlineKeyboardMarkup buildUserActivityButton(UUID userId, Language language) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(List.of(List.of(
+                        button(text(language, "keyboard.admin.view_activity"), "ADMIN_ACTIVITY_" + userId))))
+                .build();
+    }
+
     private String text(Language language, String key) {
         return localizationService.get(language, key);
     }

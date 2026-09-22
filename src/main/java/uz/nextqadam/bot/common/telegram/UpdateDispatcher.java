@@ -2,6 +2,7 @@ package uz.nextqadam.bot.common.telegram;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,7 +11,9 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.admin.ActivityLogService;
 import uz.nextqadam.bot.admin.AdminHandler;
+import uz.nextqadam.bot.admin.UserActivityLog.ActionType;
 import uz.nextqadam.bot.common.AdminAuthService;
 import uz.nextqadam.bot.common.BotCommand;
 import uz.nextqadam.bot.common.ButtonLabelResolver;
@@ -24,11 +27,18 @@ import uz.nextqadam.bot.track.TrackHandler;
 import uz.nextqadam.bot.user.OnboardingHandler;
 import uz.nextqadam.bot.user.ProfileHandler;
 import uz.nextqadam.bot.user.ResetHandler;
+import uz.nextqadam.bot.user.UserService;
 
 @Component
 public class UpdateDispatcher {
 
     private static final Logger log = LoggerFactory.getLogger(UpdateDispatcher.class);
+
+    // Masalan "TASK_DONE_<uuid>" yoki "ADMIN_ACTIVITY_<uuid>" — faoliyat logida to'liq UUID
+    // ma'nosiz va joy band qiladi, shuning uchun faqat prefiks (masalan "TASK_DONE") saqlanadi.
+    private static final Pattern TRAILING_UUID = Pattern.compile(
+            "_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    private static final int FREE_TEXT_PREVIEW_LENGTH = 40;
 
     private final OnboardingHandler onboardingHandler;
     private final GoalHandler goalHandler;
@@ -43,13 +53,16 @@ public class UpdateDispatcher {
     private final AdminAuthService adminAuthService;
     private final ResetHandler resetHandler;
     private final ButtonLabelResolver buttonLabelResolver;
+    private final UserService userService;
+    private final ActivityLogService activityLogService;
 
     public UpdateDispatcher(OnboardingHandler onboardingHandler, GoalHandler goalHandler,
                              ProfileHandler profileHandler, MemoryHandler memoryHandler, PlanHandler planHandler,
                              CompanionHandler companionHandler, TrackHandler trackHandler, NudgeHandler nudgeHandler,
                              ErrorNotificationService errorNotificationService, AdminHandler adminHandler,
                              AdminAuthService adminAuthService, ResetHandler resetHandler,
-                             ButtonLabelResolver buttonLabelResolver) {
+                             ButtonLabelResolver buttonLabelResolver, UserService userService,
+                             ActivityLogService activityLogService) {
         this.onboardingHandler = onboardingHandler;
         this.goalHandler = goalHandler;
         this.profileHandler = profileHandler;
@@ -63,6 +76,8 @@ public class UpdateDispatcher {
         this.adminAuthService = adminAuthService;
         this.resetHandler = resetHandler;
         this.buttonLabelResolver = buttonLabelResolver;
+        this.userService = userService;
+        this.activityLogService = activityLogService;
     }
 
     public void dispatch(Update update) {
@@ -87,6 +102,7 @@ public class UpdateDispatcher {
                 ? BotCommand.fromText(text)
                 : buttonLabelResolver.resolve(text);
         if (command.isPresent()) {
+            logActivity(chatId, ActionType.COMMAND, command.get().getCommand());
             switch (command.get()) {
                 case START -> onboardingHandler.handleStart(update);
                 case HELP -> companionHandler.handleHelpCommand(update);
@@ -116,6 +132,11 @@ public class UpdateDispatcher {
             }
             return;
         }
+
+        // Komanda bo'lmagan har qanday matn — AWAITING_* holatidagi javob yoki erkin suhbat —
+        // faoliyat logida bir xil FREE_TEXT turi sifatida qayd etiladi (pastdagi barcha yo'llar
+        // uchun yagona joy, har bir AWAITING_* filialida takrorlashning hojati yo'q).
+        logActivity(chatId, ActionType.FREE_TEXT, truncateFreeText(text));
 
         // Avval OnboardingHandler holatini tekshiramiz, keyin GoalHandler holatini —
         // bir vaqtning o'zida faqat bitta oqim faol bo'lishi kutiladi.
@@ -180,6 +201,8 @@ public class UpdateDispatcher {
         Long chatId = callbackQuery.getMessage().getChatId();
         String data = callbackQuery.getData();
 
+        logActivity(chatId, ActionType.CALLBACK, stripUuidSuffix(data));
+
         // Eng muhim xavfsizlik nuqtasi: ADMIN_* callbackData'ni faqat admin yubora oladi. Bu yerdagi
         // tekshiruv — handler ichidagi (ikkinchi qatlam) tekshiruvdan mustaqil, birinchi qatlam. Admin
         // bo'lmagan foydalanuvchi bu callbackData'ni qalbakilashtirsa (masalan eski xabarni forward
@@ -203,6 +226,8 @@ public class UpdateDispatcher {
                 adminHandler.handleErrorsCallback(update);
             } else if (adminHandler.isRefreshCallback(data)) {
                 adminHandler.handleRefreshCallback(update);
+            } else if (adminHandler.isActivityCallback(data)) {
+                adminHandler.handleActivityCallback(update);
             }
             return;
         }
@@ -347,5 +372,27 @@ public class UpdateDispatcher {
         }
 
         log.info("[{}] TODO: keyingi modulga ulanadi. callbackData={}, chatId={}", logId, data, chatId);
+    }
+
+    /**
+     * Faoliyat logini @Async orqali fon vazifasi sifatida yozadi — dispatcher'ning asosiy
+     * yo'naltirish tezligiga ta'sir qilmaydi. User hali mavjud emasligi (masalan onboarding ismdan
+     * oldingi bosqichda) — kutilgan holat, bunday paytda jimgina hech narsa yozilmaydi.
+     */
+    private void logActivity(Long chatId, ActionType type, String detail) {
+        userService.findByTelegramId(chatId)
+                .ifPresent(user -> activityLogService.logActivity(user.getId(), type, detail));
+    }
+
+    private String stripUuidSuffix(String callbackData) {
+        return callbackData == null ? null : TRAILING_UUID.matcher(callbackData).replaceFirst("");
+    }
+
+    private String truncateFreeText(String text) {
+        String trimmed = text.trim();
+        String preview = trimmed.length() <= FREE_TEXT_PREVIEW_LENGTH
+                ? trimmed
+                : trimmed.substring(0, FREE_TEXT_PREVIEW_LENGTH) + "...";
+        return "erkin matn: " + preview;
     }
 }

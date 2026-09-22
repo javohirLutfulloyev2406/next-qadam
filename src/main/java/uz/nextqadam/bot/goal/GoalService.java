@@ -16,6 +16,14 @@ public interface GoalService {
     String AI_DECOMPOSITION_FAILURE_MARKER = "[AI_DECOMPOSITION_FAILED]";
 
     /**
+     * AI_DECOMPOSITION_FAILURE_MARKER'ning aniqroq varianti — AI provayder vaqtinchalik band
+     * bo'lgani (503/502/429 yoki timeout, retry'lar ham tugagan) sababli muvaffaqiyatsiz bo'lgan
+     * hollarda qo'shiladi. GoalHandler shu belgi orqali foydalanuvchiga umumiy xabar o'rniga
+     * aniqroq signal ("AI hozircha band...") ko'rsatadi.
+     */
+    String AI_DECOMPOSITION_TRANSIENT_FAILURE_MARKER = "[AI_DECOMPOSITION_FAILED_TRANSIENT]";
+
+    /**
      * Brain Dump'dan kelgan, aniq Goal'ga bog'lanmagan tasklar uchun "quti" vazifasini bajaruvchi
      * maxsus Goal'ning nomi (Task.goal har doim majburiy bo'lgani uchun kerak).
      */

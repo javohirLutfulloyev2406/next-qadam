@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import uz.nextqadam.bot.admin.AdminService;
 import uz.nextqadam.bot.admin.SystemStats;
+import uz.nextqadam.bot.admin.UserActivityLog;
+import uz.nextqadam.bot.admin.UserActivityLogRepository;
 import uz.nextqadam.bot.common.errorlog.ErrorLogEntity;
 import uz.nextqadam.bot.common.errorlog.ErrorLogRepository;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -43,16 +46,19 @@ public class AdminServiceImpl implements AdminService {
     private final GoalRepository goalRepository;
     private final ErrorLogRepository errorLogRepository;
     private final TelegramExecutor telegramExecutor;
+    private final UserActivityLogRepository userActivityLogRepository;
 
     public AdminServiceImpl(UserRepository userRepository, TaskRepository taskRepository,
                              CheckInRepository checkInRepository, GoalRepository goalRepository,
-                             ErrorLogRepository errorLogRepository, TelegramExecutor telegramExecutor) {
+                             ErrorLogRepository errorLogRepository, TelegramExecutor telegramExecutor,
+                             UserActivityLogRepository userActivityLogRepository) {
         this.userRepository = userRepository;
         this.taskRepository = taskRepository;
         this.checkInRepository = checkInRepository;
         this.goalRepository = goalRepository;
         this.errorLogRepository = errorLogRepository;
         this.telegramExecutor = telegramExecutor;
+        this.userActivityLogRepository = userActivityLogRepository;
     }
 
     @Override
@@ -110,15 +116,30 @@ public class AdminServiceImpl implements AdminService {
     }
 
     @Override
-    public List<UserSummaryProjection> searchUsers(String query) {
+    public List<UserSearchResult> searchUsers(String query) {
         if (query == null || query.isBlank()) {
             return List.of();
         }
-        return userRepository.searchUsers(query.trim(), PageRequest.of(0, SEARCH_LIMIT));
+        List<UserSummaryProjection> projections = userRepository.searchUsers(query.trim(),
+                PageRequest.of(0, SEARCH_LIMIT));
+        return projections.stream()
+                .map(p -> new UserSearchResult(p.getId(), p.getName(), p.getTelegramId(), getLastActivity(p.getId())))
+                .toList();
     }
 
     @Override
     public List<ErrorLogEntity> getRecentErrors(int limit) {
         return errorLogRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(0, limit));
+    }
+
+    @Override
+    public List<UserActivityLog> getUserActivity(UUID userId) {
+        return userActivityLogRepository.findTop30ByUser_IdOrderByCreatedAtDesc(userId);
+    }
+
+    @Override
+    public Optional<LastActivityInfo> getLastActivity(UUID userId) {
+        return userActivityLogRepository.findFirstByUser_IdOrderByCreatedAtDesc(userId)
+                .map(entry -> new LastActivityInfo(entry.getCreatedAt(), entry.getActionDetail()));
     }
 }

@@ -46,12 +46,13 @@ public class ReminderScheduler {
     }
 
     private void sendReminder(Reminder reminder) {
-        String text = messageTemplateService.reminderNudge(reminder.getTone(), reminder.getContent());
+        String text = messageTemplateService.reminderNudge(reminder.getUser().getLanguage(), reminder.getTone(),
+                reminder.getContent());
         Task task = reminder.getTask();
 
         if (task != null) {
             telegramExecutor.sendMessageWithKeyboard(reminder.getUser().getTelegramId(), text,
-                    keyboardService.buildTaskActionKeyboard(task.getId()));
+                    keyboardService.buildTaskActionKeyboard(task.getId(), reminder.getUser().getLanguage()));
         } else {
             telegramExecutor.sendMessage(reminder.getUser().getTelegramId(), text);
         }

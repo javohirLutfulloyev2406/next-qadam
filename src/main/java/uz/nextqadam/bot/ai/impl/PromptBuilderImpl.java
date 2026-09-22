@@ -8,10 +8,39 @@ import org.springframework.stereotype.Component;
 
 import uz.nextqadam.bot.ai.PromptBuilder;
 import uz.nextqadam.bot.ai.dto.TaskSummaryForPrompt;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.enums.ToneType;
 
 @Component
 public class PromptBuilderImpl implements PromptBuilder {
+
+    private static final Map<Language, String> LANGUAGE_NAME = Map.of(
+            Language.UZ, "o'zbek",
+            Language.RU, "rus",
+            Language.EN, "ingliz"
+    );
+
+    /**
+     * Har bir promptning oxiriga qo'shiladigan qat'iy til ko'rsatmasi — ko'rsatma matnining o'zi
+     * doim o'zbekcha (LLM buni har qanday tilda ham to'g'ri tushunadi), lekin nomlangan til
+     * javobning FAQAT shu tilda bo'lishini talab qiladi.
+     */
+    private String languageInstruction(Language language) {
+        return "\n\nMUHIM: Javobingizni FAQAT " + LANGUAGE_NAME.get(language) + " tilida yoz. Boshqa tilda yozma.";
+    }
+
+    /**
+     * Goal decomposition uchun alohida ko'rsatma — JSON struktura kalitlari (title, milestones,
+     * tasks, period, estimatedMinutes) INGLIZCHA, o'zgarishsiz qolishi kerak (dastur ichki formati,
+     * AiResponseParser aynan shu kalitlarni parse qiladi), lekin JSON ICHIDAGI QIYMATLAR (masalan
+     * milestone va task nomlari) ko'rsatilgan tilda bo'lishi shart.
+     */
+    private String goalDecompositionLanguageInstruction(Language language) {
+        return "\n\nMUHIM: JSON struktura kalitlari (\"title\", \"milestones\", \"tasks\", \"period\", "
+                + "\"estimatedMinutes\" va h.k.) INGLIZCHA, o'zgarishsiz qoladi — bu dastur ichki formati. LEKIN "
+                + "JSON ICHIDAGI QIYMATLAR (masalan milestone va task nomlari) FAQAT " + LANGUAGE_NAME.get(language)
+                + " tilida yozilishi shart.";
+    }
 
     private static final Map<ToneType, String> FREE_CHAT_PERSONALITY = Map.of(
             ToneType.SOFT, "Sen mehribon, sabr-toqatli va tushunuvchan hamrohsan. Foydalanuvchini hech qachon "
@@ -166,21 +195,22 @@ public class PromptBuilderImpl implements PromptBuilder {
             """;
 
     @Override
-    public String buildGoalDecompositionPrompt(String goalDescription, String memoryContext) {
+    public String buildGoalDecompositionPrompt(String goalDescription, String memoryContext, Language language) {
         String prompt = TEMPLATE.formatted(goalDescription);
         if (memoryContext != null && !memoryContext.isBlank()) {
             prompt += "\n\nFoydalanuvchi haqida ma'lum ma'lumotlar:\n" + memoryContext;
         }
-        return prompt;
+        return prompt + goalDecompositionLanguageInstruction(language);
     }
 
     @Override
-    public String buildBrainDumpPrompt(String rawText) {
-        return BRAIN_DUMP_TEMPLATE.formatted(rawText);
+    public String buildBrainDumpPrompt(String rawText, Language language) {
+        return BRAIN_DUMP_TEMPLATE.formatted(rawText) + languageInstruction(language);
     }
 
     @Override
-    public String buildFreeChatSystemPrompt(ToneType tone, String memoryContext, String recentGoalsSummary) {
+    public String buildFreeChatSystemPrompt(ToneType tone, String memoryContext, String recentGoalsSummary,
+                                             Language language) {
         StringBuilder sb = new StringBuilder();
         sb.append("Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. ")
                 .append(FREE_CHAT_PERSONALITY.get(tone))
@@ -201,12 +231,13 @@ public class PromptBuilderImpl implements PromptBuilder {
 
         sb.append("\nMUHIM: Javobing QISQA bo'lsin — 3-4 gapdan oshmasin, Telegram'da o'qilishi qulay bo'lishi "
                 + "uchun. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.");
+        sb.append(languageInstruction(language));
         return sb.toString();
     }
 
     @Override
     public String buildMotivationPrompt(ToneType tone, String lastCompletedTask, String activeGoalTitle,
-                                         int completedTaskCount) {
+                                         int completedTaskCount, Language language) {
         StringBuilder sb = new StringBuilder();
         sb.append("Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. ")
                 .append(FREE_CHAT_PERSONALITY.get(tone))
@@ -235,11 +266,12 @@ public class PromptBuilderImpl implements PromptBuilder {
                 + "qo'shtirnoq bo'lmasin.\n");
         sb.append("2. Javob 2-3 gapdan oshmasin.\n");
         sb.append("3. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.\n");
+        sb.append(languageInstruction(language));
         return sb.toString();
     }
 
     @Override
-    public String buildSosPrompt(ToneType tone, String currentTaskTitle, int estimatedMinutes) {
+    public String buildSosPrompt(ToneType tone, String currentTaskTitle, int estimatedMinutes, Language language) {
         return """
                 Sen NextQadam ismli shaxsiy rivojlanish yordamchisisan. %s
 
@@ -254,27 +286,28 @@ public class PromptBuilderImpl implements PromptBuilder {
                 sarlavhasini yoz").
                 2. Hech qanday izoh, sarlavha, qo'shtirnoq yoki ro'yxat bo'lmasin — faqat harakatning o'zi.
                 3. Markdown yoki HTML teglaridan foydalanma, oddiy matn yoz.
-                """.formatted(FREE_CHAT_PERSONALITY.get(tone), currentTaskTitle, estimatedMinutes);
+                """.formatted(FREE_CHAT_PERSONALITY.get(tone), currentTaskTitle, estimatedMinutes)
+                + languageInstruction(language);
     }
 
     @Override
-    public String buildEveningCheckinPrompt(String rawText, List<TaskSummaryForPrompt> todaysTasks) {
+    public String buildEveningCheckinPrompt(String rawText, List<TaskSummaryForPrompt> todaysTasks, Language language) {
         String taskList = todaysTasks.stream()
                 .map(task -> "- " + task.id() + " — " + task.title())
                 .collect(Collectors.joining("\n"));
-        return EVENING_CHECKIN_TEMPLATE.formatted(taskList, rawText);
+        return EVENING_CHECKIN_TEMPLATE.formatted(taskList, rawText) + languageInstruction(language);
     }
 
     @Override
     public String buildWeeklyRetrospectivePrompt(int totalTasks, int doneTasks, List<String> completedTaskTitles,
-                                                  List<String> missedTaskTitles) {
+                                                  List<String> missedTaskTitles, Language language) {
         String completed = completedTaskTitles.isEmpty() ? "(yo'q)" : String.join(", ", completedTaskTitles);
         String missed = missedTaskTitles.isEmpty() ? "(yo'q)" : String.join(", ", missedTaskTitles);
-        return WEEKLY_RETRO_TEMPLATE.formatted(totalTasks, doneTasks, completed, missed);
+        return WEEKLY_RETRO_TEMPLATE.formatted(totalTasks, doneTasks, completed, missed) + languageInstruction(language);
     }
 
     @Override
-    public String buildGoalDriftPrompt(String goalTitle, List<String> recentTaskTitles) {
+    public String buildGoalDriftPrompt(String goalTitle, List<String> recentTaskTitles, Language language) {
         String tasksText = recentTaskTitles.isEmpty()
                 ? "(hech qanday vazifa topilmadi)"
                 : String.join(", ", recentTaskTitles);
@@ -283,6 +316,6 @@ public class PromptBuilderImpl implements PromptBuilder {
                         + "tabiiy, lekin izohda buni \"hali ma'lumot yetarli emas\" tarzida ifodala, "
                         + "foydalanuvchini ayblama."
                 : "";
-        return GOAL_DRIFT_TEMPLATE.formatted(goalTitle, tasksText, emptyNote);
+        return GOAL_DRIFT_TEMPLATE.formatted(goalTitle, tasksText, emptyNote) + languageInstruction(language);
     }
 }

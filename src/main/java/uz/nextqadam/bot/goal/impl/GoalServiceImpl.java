@@ -79,7 +79,7 @@ public class GoalServiceImpl implements GoalService {
 
         try {
             String memoryContext = memoryService.buildContextBlock(userId);
-            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription, memoryContext);
+            String systemPrompt = promptBuilder.buildGoalDecompositionPrompt(rawDescription, memoryContext, user.getLanguage());
             String rawJson = aiClient.complete(systemPrompt, rawDescription);
             GoalDecompositionResult result = aiResponseParser.parseGoalDecomposition(rawJson);
 

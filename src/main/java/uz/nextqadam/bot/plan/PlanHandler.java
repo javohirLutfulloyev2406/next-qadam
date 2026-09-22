@@ -19,7 +19,9 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 
 import uz.nextqadam.bot.ai.AiClientException;
 import uz.nextqadam.bot.ai.AiResponseParseException;
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.MessageTemplateService;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService.CheckinTaskOption;
 import uz.nextqadam.bot.common.telegram.TelegramExecutor;
@@ -50,10 +52,12 @@ public class PlanHandler {
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
     private final MessageTemplateService messageTemplateService;
+    private final LocalizationService localizationService;
 
     public PlanHandler(PlanService planService, UserService userService, TaskRepository taskRepository,
                         IdeaRepository ideaRepository, KeyboardService keyboardService,
-                        TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService) {
+                        TelegramExecutor telegramExecutor, MessageTemplateService messageTemplateService,
+                        LocalizationService localizationService) {
         this.planService = planService;
         this.userService = userService;
         this.taskRepository = taskRepository;
@@ -61,6 +65,7 @@ public class PlanHandler {
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
         this.messageTemplateService = messageTemplateService;
+        this.localizationService = localizationService;
     }
 
     public boolean isAwaitingBrainDumpText(Long chatId) {
@@ -88,20 +93,20 @@ public class PlanHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         List<Task> candidateTasks = pendingTasksForPlanning(user.getId());
         if (candidateTasks.isEmpty()) {
-            telegramExecutor.sendMessage(chatId, "Hozircha rejalashtirish kerak bo'lgan vazifangiz yo'q.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(user.getLanguage(), "plan.day.empty"));
             return;
         }
 
         selectedTaskIdsByChatId.put(chatId, new LinkedHashSet<>());
         telegramExecutor.sendMessageWithKeyboard(chatId,
-                "🌅 <b>Bugun nimalarga ustuvorlik berasiz?</b>\n\nEng muhim 1-3 tasini tanlang:",
-                buildCheckinKeyboard(candidateTasks, chatId));
+                localizationService.get(user.getLanguage(), "plan.day.prompt"),
+                buildCheckinKeyboard(candidateTasks, chatId, user.getLanguage()));
     }
 
     public void handleCheckinToggle(Update update) {
@@ -110,22 +115,25 @@ public class PlanHandler {
         Integer messageId = callbackQuery.getMessage().getMessageId();
         UUID taskId = UUID.fromString(callbackQuery.getData().substring(CHECKIN_TOGGLE_PREFIX.length()));
 
+        User user = userService.findByTelegramId(chatId).orElse(null);
+        if (user == null) {
+            return;
+        }
+
         Set<UUID> selected = selectedTaskIdsByChatId.computeIfAbsent(chatId, id -> new LinkedHashSet<>());
         if (selected.contains(taskId)) {
             selected.remove(taskId);
         } else if (selected.size() >= MAX_TODAY_PRIORITIES) {
-            telegramExecutor.answerCallbackQuery(callbackQuery.getId(), "Ko'pi bilan 3 ta tanlash mumkin", true);
+            telegramExecutor.answerCallbackQuery(callbackQuery.getId(),
+                    localizationService.get(user.getLanguage(), "plan.day.limit_toast"), true);
             return;
         } else {
             selected.add(taskId);
         }
 
-        User user = userService.findByTelegramId(chatId).orElse(null);
-        if (user == null) {
-            return;
-        }
         List<Task> candidateTasks = pendingTasksForPlanning(user.getId());
-        telegramExecutor.editMessageReplyMarkup(chatId, messageId, buildCheckinKeyboard(candidateTasks, chatId));
+        telegramExecutor.editMessageReplyMarkup(chatId, messageId,
+                buildCheckinKeyboard(candidateTasks, chatId, user.getLanguage()));
     }
 
     public void handleCheckinConfirm(Update update) {
@@ -149,7 +157,7 @@ public class PlanHandler {
                 .collect(Collectors.joining("\n"));
 
         telegramExecutor.editMessageText(chatId, messageId,
-                "✅ <b>Bugungi ustuvorlik belgilandi:</b>\n\n" + taskList + "\n\nOmad! 🚀");
+                localizationService.get(user.getLanguage(), "plan.day.confirmed", taskList));
         telegramExecutor.editMessageReplyMarkup(chatId, messageId,
                 InlineKeyboardMarkup.builder().keyboard(List.of()).build());
     }
@@ -157,9 +165,8 @@ public class PlanHandler {
     public void handleBrainDumpCommand(Update update) {
         Long chatId = update.getMessage().getChatId();
         stageByChatId.put(chatId, PlanStage.AWAITING_BRAINDUMP_TEXT);
-        telegramExecutor.sendMessage(chatId,
-                "🧠 Xayolingizda nima bor? Bir nechta narsani bir paytda yozib tashlashingiz mumkin — "
-                        + "men ularni tartiblab beraman.");
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "plan.braindump.prompt"));
     }
 
     public void handleBrainDumpText(Update update) {
@@ -170,22 +177,21 @@ public class PlanHandler {
 
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         Integer placeholderMessageId = telegramExecutor.sendPlaceholder(chatId,
-                messageTemplateService.typingPlaceholder(user.getTonePreference()));
+                messageTemplateService.typingPlaceholder(user.getLanguage(), user.getTonePreference()));
         BrainDumpSummary summary;
         try {
             summary = planService.processBrainDump(user.getId(), rawText);
         } catch (AiClientException | AiResponseParseException e) {
-            showResult(chatId, placeholderMessageId,
-                    "Kechirasiz, fikrlaringizni tartiblashda xatolik yuz berdi. Birozdan so'ng qayta urinib ko'ring.");
+            showResult(chatId, placeholderMessageId, localizationService.get(user.getLanguage(), "plan.braindump.error"));
             return;
         }
 
-        showResult(chatId, placeholderMessageId, formatBrainDumpSummary(summary));
+        showResult(chatId, placeholderMessageId, formatBrainDumpSummary(summary, user.getLanguage()));
     }
 
     /**
@@ -204,37 +210,36 @@ public class PlanHandler {
         Long chatId = update.getMessage().getChatId();
         User user = userService.findByTelegramId(chatId).orElse(null);
         if (user == null) {
-            telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"));
             return;
         }
 
         List<Idea> ideas = ideaRepository.findByUser_IdOrderByCreatedAtDesc(user.getId());
         if (ideas.isEmpty()) {
-            telegramExecutor.sendMessage(chatId,
-                    "Hali hech qanday g'oya saqlanmagan. /braindump orqali fikrlaringizni yozib tashlang.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(user.getLanguage(), "plan.ideas.empty"));
             return;
         }
 
         List<Idea> topIdeas = ideas.size() > IDEAS_LIST_LIMIT ? ideas.subList(0, IDEAS_LIST_LIMIT) : ideas;
-        StringBuilder sb = new StringBuilder("💡 <b>G'oyalaringiz:</b>\n\n");
+        StringBuilder sb = new StringBuilder(localizationService.get(user.getLanguage(), "plan.ideas.title")).append("\n\n");
         for (Idea idea : topIdeas) {
             sb.append("• ").append(idea.getContent()).append("\n");
         }
         telegramExecutor.sendMessage(chatId, sb.toString());
     }
 
-    private String formatBrainDumpSummary(BrainDumpSummary summary) {
-        StringBuilder sb = new StringBuilder("🧠 <b>Tartibga solindi!</b>\n\n");
+    private String formatBrainDumpSummary(BrainDumpSummary summary, Language language) {
+        StringBuilder sb = new StringBuilder(localizationService.get(language, "plan.braindump.summary.title")).append("\n\n");
         if (summary.taskCount() > 0) {
-            sb.append("✅ ").append(summary.taskCount()).append(" ta vazifa qo'shildi\n");
+            sb.append(localizationService.get(language, "plan.braindump.summary.tasks", summary.taskCount())).append("\n");
         }
         if (summary.ideaCount() > 0) {
-            sb.append("💡 ").append(summary.ideaCount()).append(" ta g'oya saqlandi\n");
+            sb.append(localizationService.get(language, "plan.braindump.summary.ideas", summary.ideaCount())).append("\n");
         }
         if (summary.reminderCount() > 0) {
-            sb.append("⏰ ").append(summary.reminderCount()).append(" ta eslatma o'rnatildi\n");
+            sb.append(localizationService.get(language, "plan.braindump.summary.reminders", summary.reminderCount())).append("\n");
         }
-        sb.append("\n/goals orqali vazifalarni, /ideas orqali g'oyalarni ko'rishingiz mumkin.");
+        sb.append("\n").append(localizationService.get(language, "plan.braindump.summary.footer"));
         return sb.toString();
     }
 
@@ -243,12 +248,12 @@ public class PlanHandler {
                 PageRequest.of(0, PLAN_DAY_TASK_LIMIT));
     }
 
-    private InlineKeyboardMarkup buildCheckinKeyboard(List<Task> candidateTasks, Long chatId) {
+    private InlineKeyboardMarkup buildCheckinKeyboard(List<Task> candidateTasks, Long chatId, Language language) {
         Set<UUID> selected = selectedTaskIdsByChatId.getOrDefault(chatId, Set.of());
         List<CheckinTaskOption> options = candidateTasks.stream()
                 .map(task -> new CheckinTaskOption(task.getId(), task.getTitle(), selected.contains(task.getId())))
                 .toList();
-        return keyboardService.buildMorningCheckinKeyboard(options);
+        return keyboardService.buildMorningCheckinKeyboard(options, language);
     }
 
     private enum PlanStage {

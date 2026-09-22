@@ -1,6 +1,7 @@
 package uz.nextqadam.bot.user;
 
 import uz.nextqadam.bot.common.BaseEntity;
+import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.enums.ToneType;
 
 import jakarta.persistence.Column;
@@ -37,4 +38,9 @@ public class User extends BaseEntity {
 
     @Column(name = "timezone")
     private String timezone;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "language", nullable = false)
+    private Language language = Language.UZ;
 }

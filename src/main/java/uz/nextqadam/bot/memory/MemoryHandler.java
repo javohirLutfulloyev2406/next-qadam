@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.enums.Language;
 import uz.nextqadam.bot.common.keyboard.KeyboardService;
 import uz.nextqadam.bot.common.keyboard.KeyboardService.MemoryListOption;
@@ -31,13 +32,15 @@ public class MemoryHandler {
     private final UserService userService;
     private final KeyboardService keyboardService;
     private final TelegramExecutor telegramExecutor;
+    private final LocalizationService localizationService;
 
     public MemoryHandler(MemoryService memoryService, UserService userService, KeyboardService keyboardService,
-                          TelegramExecutor telegramExecutor) {
+                          TelegramExecutor telegramExecutor, LocalizationService localizationService) {
         this.memoryService = memoryService;
         this.userService = userService;
         this.keyboardService = keyboardService;
         this.telegramExecutor = telegramExecutor;
+        this.localizationService = localizationService;
     }
 
     public boolean isMemoryView(String callbackData) {
@@ -85,42 +88,47 @@ public class MemoryHandler {
 
         userService.findByTelegramId(chatId).ifPresent(user -> {
             memoryService.forgetOne(user.getId(), memoryItemId);
-            telegramExecutor.sendMessage(chatId, "🗑️ O'chirildi.");
+            telegramExecutor.sendMessage(chatId, localizationService.get(user.getLanguage(), "memory.item.deleted"));
         });
         showMemoryList(chatId);
     }
 
     public void handleDeleteAllConfirmCallback(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
-        userService.findByTelegramId(chatId).ifPresent(user -> memoryService.forgetAll(user.getId()));
-        telegramExecutor.sendMessage(chatId, "✅ Xotiram tozalandi. Yangi sahifadan boshlaymiz 🙂");
+        Language language = userService.findByTelegramId(chatId)
+                .map(user -> {
+                    memoryService.forgetAll(user.getId());
+                    return user.getLanguage();
+                })
+                .orElse(Language.UZ);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "memory.deleteAll.done"));
     }
 
     public void handleDeleteAllCancelCallback(Update update) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
-        telegramExecutor.sendMessage(chatId, "Bekor qilindi, hech narsa o'chirilmadi.");
+        Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
+        telegramExecutor.sendMessage(chatId, localizationService.get(language, "memory.deleteAll.cancelled"));
         showMemoryList(chatId);
     }
 
     private void askDeleteAllConfirmation(Long chatId) {
         Language language = userService.findByTelegramId(chatId).map(User::getLanguage).orElse(Language.UZ);
         telegramExecutor.sendMessageWithKeyboard(chatId,
-                "⚠️ Butun xotiramni o'chiray deysizmi? Bu amalni qaytarib bo'lmaydi.",
+                localizationService.get(language, "memory.confirm.deleteAll"),
                 keyboardService.buildConfirmDeleteAllKeyboard(language));
     }
 
     private void showMemoryList(Long chatId) {
         userService.findByTelegramId(chatId).ifPresentOrElse(
                 user -> {
+                    Language language = user.getLanguage();
                     List<MemoryItem> items = memoryService.getTopMemories(user.getId(), MEMORY_LIST_LIMIT);
                     if (items.isEmpty()) {
-                        telegramExecutor.sendMessage(chatId,
-                                "🧠 Hozircha hech narsa saqlamagan ekanman. Maqsad qo'shsangiz, men muhim "
-                                        + "narsalarni eslab qolaman.");
+                        telegramExecutor.sendMessage(chatId, localizationService.get(language, "memory.list.empty"));
                         return;
                     }
 
-                    StringBuilder text = new StringBuilder("🧠 <b>Men bular haqida bilaman:</b>\n\n");
+                    StringBuilder text = new StringBuilder(localizationService.get(language, "memory.list.header"));
                     List<MemoryListOption> options = new ArrayList<>();
                     for (MemoryItem item : items) {
                         text.append("• ").append(item.getKey()).append(": ")
@@ -129,9 +137,9 @@ public class MemoryHandler {
                     }
 
                     telegramExecutor.sendMessageWithKeyboard(chatId, text.toString(),
-                            keyboardService.buildMemoryListKeyboard(options, user.getLanguage()));
+                            keyboardService.buildMemoryListKeyboard(options, language));
                 },
-                () -> telegramExecutor.sendMessage(chatId, "Avval /start orqali ro'yxatdan o'ting.")
+                () -> telegramExecutor.sendMessage(chatId, localizationService.get(Language.UZ, "common.please_start"))
         );
     }
 

@@ -22,6 +22,7 @@ import uz.nextqadam.bot.ai.dto.GoalDriftResult;
 import uz.nextqadam.bot.ai.dto.TaskClassification;
 import uz.nextqadam.bot.ai.dto.TaskSummaryForPrompt;
 import uz.nextqadam.bot.ai.dto.WeeklyRetrospective;
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.util.TimeUtil;
 import uz.nextqadam.bot.goal.Goal;
 import uz.nextqadam.bot.goal.GoalRepository;
@@ -54,10 +55,12 @@ public class TrackServiceImpl implements TrackService {
     private final PromptBuilder promptBuilder;
     private final AiClient aiClient;
     private final AiResponseParser aiResponseParser;
+    private final LocalizationService localizationService;
 
     public TrackServiceImpl(CheckInRepository checkInRepository, TaskRepository taskRepository,
                              GoalRepository goalRepository, GoalService goalService, UserRepository userRepository,
-                             PromptBuilder promptBuilder, AiClient aiClient, AiResponseParser aiResponseParser) {
+                             PromptBuilder promptBuilder, AiClient aiClient, AiResponseParser aiResponseParser,
+                             LocalizationService localizationService) {
         this.checkInRepository = checkInRepository;
         this.taskRepository = taskRepository;
         this.goalRepository = goalRepository;
@@ -66,6 +69,7 @@ public class TrackServiceImpl implements TrackService {
         this.promptBuilder = promptBuilder;
         this.aiClient = aiClient;
         this.aiResponseParser = aiResponseParser;
+        this.localizationService = localizationService;
     }
 
     @Override
@@ -127,9 +131,10 @@ public class TrackServiceImpl implements TrackService {
             return aiResponseParser.parseWeeklyRetrospective(rawJson);
         } catch (AiClientException | AiResponseParseException e) {
             log.error("Haftalik retrospektivani AI orqali generatsiya qilishda xatolik. userId={}", userId, e);
+            Language language = languageOf(userId);
             return new WeeklyRetrospective(
-                    "Bu hafta " + done + "/" + total + " vazifa bajardingiz.",
-                    "Davom eting!");
+                    localizationService.get(language, "track.retro.fallback.narrative", done, total),
+                    localizationService.get(language, "track.retro.fallback.recommendation"));
         }
     }
 
@@ -138,7 +143,7 @@ public class TrackServiceImpl implements TrackService {
         Goal activeGoal = goalRepository.findFirstByUserIdAndStatusOrderByCreatedAtDesc(userId, Goal.Status.ACTIVE)
                 .orElse(null);
         if (activeGoal == null) {
-            return new GoalDriftResult(100, "Faol maqsad yo'q");
+            return new GoalDriftResult(100, localizationService.get(languageOf(userId), "track.drift.fallback.no_active_goal"));
         }
 
         List<String> recentTaskTitles = taskRepository
@@ -153,8 +158,7 @@ public class TrackServiceImpl implements TrackService {
             return aiResponseParser.parseGoalDrift(rawJson);
         } catch (AiClientException | AiResponseParseException e) {
             log.error("Goal drift tekshiruvida xatolik. userId={}", userId, e);
-            return new GoalDriftResult(100, "Tekshirishda xatolik yuz berdi, hozircha yo'nalish yaxshi deb "
-                    + "hisoblaymiz.");
+            return new GoalDriftResult(100, localizationService.get(languageOf(userId), "track.drift.fallback.check_error"));
         }
     }
 

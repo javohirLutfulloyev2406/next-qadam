@@ -1,6 +1,5 @@
 package uz.nextqadam.bot.companion.impl;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service;
 import uz.nextqadam.bot.ai.AiClient;
 import uz.nextqadam.bot.ai.AiClientException;
 import uz.nextqadam.bot.ai.PromptBuilder;
-import uz.nextqadam.bot.common.enums.ToneType;
+import uz.nextqadam.bot.common.LocalizationService;
 import uz.nextqadam.bot.common.exception.NextQadamException;
 import uz.nextqadam.bot.companion.CompanionService;
 import uz.nextqadam.bot.goal.Goal;
@@ -27,37 +26,24 @@ public class CompanionServiceImpl implements CompanionService {
 
     private static final Logger log = LoggerFactory.getLogger(CompanionServiceImpl.class);
 
-    private static final Map<ToneType, String> FREE_CHAT_FALLBACK = Map.of(
-            ToneType.SOFT, "Hozir sizni eshitolmayapman, biroz keyinroq qayta urinib ko'ring 🙂",
-            ToneType.NORMAL, "Hozir javob berolmayapman, birozdan so'ng qayta urinib ko'ring.",
-            ToneType.HARD, "Hozir ulanishda muammo bor. Birozdan so'ng qayta yozing.",
-            ToneType.HARDCORE, "Hozir javob yo'q — signal muammosi. Birozdan so'ng qaytadan urin."
-    );
-
-    private static final Map<ToneType, String> MOTIVATION_FALLBACK = Map.of(
-            ToneType.SOFT, "Har bir kichik qadam ham muhim. O'zingizga vaqt bering, siz to'g'ri yo'ldasiz 🌱",
-            ToneType.NORMAL, "Davom eting — har bir bajarilgan vazifa sizni maqsadga yaqinlashtiradi.",
-            ToneType.HARD, "Gapni cho'zmang — bugungi qadamni tashlang. Harakat natijani keltiradi.",
-            ToneType.HARDCORE, "Bahona yo'q. Hozir turing va harakat qiling — kutish sizni hech qayerga olib bormaydi."
-    );
-
-    private static final String SOS_FALLBACK = "Shu vazifaning eng kichik qismini — atigi bir amalni — hozir qil.";
-
     private final MemoryService memoryService;
     private final GoalService goalService;
     private final TaskRepository taskRepository;
     private final UserRepository userRepository;
     private final AiClient aiClient;
     private final PromptBuilder promptBuilder;
+    private final LocalizationService localizationService;
 
     public CompanionServiceImpl(MemoryService memoryService, GoalService goalService, TaskRepository taskRepository,
-                                 UserRepository userRepository, AiClient aiClient, PromptBuilder promptBuilder) {
+                                 UserRepository userRepository, AiClient aiClient, PromptBuilder promptBuilder,
+                                 LocalizationService localizationService) {
         this.memoryService = memoryService;
         this.goalService = goalService;
         this.taskRepository = taskRepository;
         this.userRepository = userRepository;
         this.aiClient = aiClient;
         this.promptBuilder = promptBuilder;
+        this.localizationService = localizationService;
     }
 
     @Override
@@ -74,7 +60,8 @@ public class CompanionServiceImpl implements CompanionService {
             return aiClient.completeText(systemPrompt, userMessage);
         } catch (AiClientException e) {
             log.warn("Erkin suhbat javobini olishda xatolik. userId={}", userId, e);
-            return FREE_CHAT_FALLBACK.get(user.getTonePreference());
+            return localizationService.get(user.getLanguage(),
+                    "companion.freechat.fallback." + user.getTonePreference().name());
         }
     }
 
@@ -98,7 +85,8 @@ public class CompanionServiceImpl implements CompanionService {
             return aiClient.completeText(systemPrompt, "Menga motivatsion xabar yoz.");
         } catch (AiClientException e) {
             log.warn("Motivatsion xabar olishda xatolik. userId={}", userId, e);
-            return MOTIVATION_FALLBACK.get(user.getTonePreference());
+            return localizationService.get(user.getLanguage(),
+                    "companion.motivation.fallback." + user.getTonePreference().name());
         }
     }
 
@@ -119,7 +107,7 @@ public class CompanionServiceImpl implements CompanionService {
             return aiClient.completeText(systemPrompt, "Bu vazifani 5 daqiqalik mikro-qadamga qisqartir.");
         } catch (AiClientException e) {
             log.warn("SOS mikro-qadam olishda xatolik. userId={}", userId, e);
-            return SOS_FALLBACK;
+            return localizationService.get(user.getLanguage(), "companion.sos.fallback");
         }
     }
 

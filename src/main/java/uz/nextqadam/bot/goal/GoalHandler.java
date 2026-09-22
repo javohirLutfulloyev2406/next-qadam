@@ -106,6 +106,13 @@ public class GoalHandler {
 
         Goal goal = goalService.createGoalWithAiDecomposition(user.getId(), rawDescription);
 
+        if (goal.getDescription() != null
+                && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_TRANSIENT_FAILURE_MARKER)) {
+            showResult(chatId, placeholderMessageId,
+                    localizationService.get(user.getLanguage(), "goal.decomposition.failed.transient"));
+            return;
+        }
+
         if (goal.getDescription() != null && goal.getDescription().contains(GoalService.AI_DECOMPOSITION_FAILURE_MARKER)) {
             showResult(chatId, placeholderMessageId,
                     localizationService.get(user.getLanguage(), "goal.decomposition.failed"));
